@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>The Graveyard: a public ledger of dead trading strategies</title>
+<meta name="description" content="155 strategies tested, 112 ledger entries, 2,123 configurations, 12 survivors, 5 public retractions. A forward-running, git-dated ledger of quant research failures on Indian markets.">
+<meta property="og:title" content="The Graveyard: a public ledger of dead trading strategies">
+<meta property="og:description" content="Everyone publishes their wins. Nobody publishes their denominator. This is the denominator.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://finance-broski.github.io/graveyard.html">
+<meta property="og:image" content="https://finance-broski.github.io/og-graveyard.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<meta name="referrer" content="strict-origin">
+<link rel="stylesheet" href="style.css">
+<style>
+  /* night palette: the site's obsidian-and-champagne, actually obsidian (ratified 2026-08-01) */
+  :root{
+    --bg:#17181c; --panel:#1e2025; --panel-hi:#23252b; --pill:#23252b;
+    --fg:#ece7db; --muted:#a39d90; --faint:#7c776c; --line:#2b2d34;
+    --card:#1e2025;
+    --accent:#c2a15c; --accent-hi:#d4b876; --accent-ink:#17181c; --accent-soft:rgba(194,161,92,.14);
+    --fail:#d05a63; --failbg:rgba(208,90,99,.12);
+    --shadow:0 1px 2px rgba(0,0,0,.45),0 14px 34px -18px rgba(0,0,0,.65);
+  }
+  .cta:hover,.nav .go:hover{background:var(--accent-hi)}
+
+  /* ---------- UX layer ---------- */
+  #gv-progress{position:fixed;top:0;left:0;height:2px;background:var(--accent);width:0;z-index:40}
+  .rail{position:fixed;top:110px;left:calc((100vw - 1100px)/2 - 205px);width:180px;z-index:5;
+    font-size:.82rem;line-height:1.5}
+  @media(max-width:1470px){.rail{display:none}}
+  .rail a{display:block;color:var(--faint);text-decoration:none;padding:3px 0 3px 12px;
+    border-left:2px solid var(--line)}
+  .rail a:hover{color:var(--fg)}
+  .rail a.on{color:var(--accent);border-left-color:var(--accent)}
+  .rail a.sub{padding-left:24px;font-size:.76rem}
+  .rail .n{color:var(--faint);font:600 .62rem/1 var(--mono);margin-left:.35rem}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 1.8rem}
+  .chips a{font:600 .74rem/1 var(--mono);letter-spacing:.03em;color:var(--muted);
+    text-decoration:none;background:var(--panel);border:1px solid var(--line);border-radius:999px;
+    padding:8px 13px;transition:border-color .15s,color .15s}
+  .chips a:hover{border-color:var(--accent);color:var(--accent)}
+  .chips a b{color:var(--accent);font-weight:600}
+  .gv-search{display:flex;align-items:center;gap:.8rem;margin:0 0 1.6rem;flex-wrap:wrap}
+  .gv-search input{flex:1;min-width:240px;background:var(--panel);border:1px solid var(--line);
+    border-radius:8px;padding:11px 14px;color:var(--fg);font:400 .95rem var(--sans);outline:none}
+  .gv-search input:focus{border-color:var(--accent)}
+  .gv-search input::placeholder{color:var(--faint)}
+  #gv-count{font:600 .72rem/1 var(--mono);color:var(--faint);white-space:nowrap}
+  #gv-top{position:fixed;right:22px;bottom:22px;z-index:30;background:var(--panel);
+    border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:9px 13px;
+    font:600 .78rem/1 var(--sans);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .2s}
+  #gv-top.show{opacity:1;pointer-events:auto}
+  #gv-top:hover{color:var(--accent);border-color:var(--accent)}
+  .six{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 0 .6rem}
+  @media(max-width:880px){.six{grid-template-columns:1fr}}
+  .six a{display:block;background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;text-decoration:none;box-shadow:var(--shadow);transition:border-color .15s}
+  .six a:hover{border-color:var(--accent)}
+  .six .gid{font:600 .68rem/1 var(--mono);color:var(--accent)}
+  .six b{display:block;color:var(--fg);margin:.35rem 0 .3rem;font-size:.95rem}
+  .six p{font-size:.83rem;color:var(--muted);margin:0;line-height:1.5}
+
+  /* ledger tables */
+  .gv-tblwrap{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    box-shadow:var(--shadow);margin:0 0 1.6rem}
+  @media(max-width:1120px){.gv-tblwrap{overflow-x:auto}}
+  table.gv{border-collapse:collapse;width:100%;min-width:980px;font-size:.8rem;line-height:1.45}
+  table.gv th{font:600 .66rem/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;
+    color:var(--faint);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);
+    background:var(--panel-hi);position:sticky;top:52px;z-index:2}
+  table.gv td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--fg)}
+  table.gv tr:last-child td{border-bottom:0}
+  table.gv tr:target td{background:var(--accent-soft)}
+  tr.gv-row{cursor:pointer}
+  tr.gv-row:hover td{background:rgba(255,255,255,.025)}
+  .chev{margin-left:7px;color:var(--faint);display:inline-block;transition:transform .2s,color .2s;font-size:.68rem}
+  tr.gv-row.open .chev{transform:rotate(90deg);color:var(--accent)}
+  tr.gv-detail>td{padding:0!important;border-bottom:0}
+  tr.gv-detail.open>td{border-bottom:1px solid var(--line)}
+  .dwrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows .26s ease}
+  tr.gv-detail.open .dwrap{grid-template-rows:1fr}
+  .din{overflow:hidden}
+  .dcard{padding:16px 20px;background:var(--panel-hi)}
+  .dcard .dh{font-size:1rem;color:var(--fg);margin:0 0 .8rem;line-height:1.5}
+  .df{display:grid;grid-template-columns:160px 1fr;gap:7px 16px;font-size:.86rem}
+  .df .k{font:600 .66rem/1.6 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+  .df .w{color:var(--muted)}
+  .autopsy{margin:.9rem 0 0;font-size:.9rem;color:var(--fg);line-height:1.6;
+    border-left:2px solid var(--accent);padding-left:13px}
+  .dlink{margin:.9rem 0 0;display:flex;align-items:center;gap:.7rem}
+  .dlink code{font:600 .72rem/1 var(--mono);color:var(--accent);background:var(--panel);
+    border:1px solid var(--line);border-radius:6px;padding:6px 9px}
+  .dlink button{background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;
+    padding:6px 10px;font:600 .72rem/1 var(--sans);cursor:pointer}
+  .dlink button:hover{color:var(--accent);border-color:var(--accent)}
+  tr.gv-row td:nth-child(1){font-family:var(--mono);font-size:.72rem;white-space:nowrap}
+  tr.gv-row td:nth-child(1) a{color:var(--accent);text-decoration:none}
+  tr.gv-row td:nth-child(1) a:hover{color:var(--accent-hi);text-decoration:underline}
+  tr.gv-row td:nth-child(2){font-family:var(--mono);font-size:.72rem;color:var(--faint);white-space:nowrap}
+  tr.gv-row td:nth-child(5),tr.gv-row td:nth-child(6){color:var(--muted)}
+  tr.gv-row td:nth-child(7){font-family:var(--mono);font-size:.72rem;white-space:nowrap}
+  tr.gv-row td:nth-child(8){font-family:var(--mono);font-size:.7rem;color:var(--faint)}
+  .dcard{font-family:var(--sans)}
+  .gv-class{margin:2.6rem 0 .35rem;display:flex;align-items:baseline;gap:.7rem;flex-wrap:wrap}
+  .gv-class h3{font-family:var(--serif);font-size:1.22rem;font-weight:500;margin:0}
+  .gv-class .n{font:600 .7rem/1 var(--mono);color:var(--accent)}
+  /* the internal slug, kept visible so the row-level vocabulary still resolves */
+  .gv-slug{font:400 .66rem/1 var(--mono);color:var(--faint);letter-spacing:.04em}
+  .gv-def{color:var(--muted);font-size:.92rem;margin:0 0 .9rem}
+  .gv-withheld{font-size:.85rem;color:var(--faint);margin:-.8rem 0 1.4rem;font-style:italic}
+  .retr{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--fail);
+    border-radius:10px;box-shadow:var(--shadow);padding:16px 18px;margin:0 0 .9rem}
+  .retr .tag{font:600 .68rem/1 var(--mono);color:var(--fail);letter-spacing:.05em}
+  .retr b{display:block;margin:.3rem 0 .3rem;font-size:.98rem}
+  .retr p{font-size:.9rem;color:var(--muted);margin:0;line-height:1.55}
+  /* memorial hero (distinct from the service site's grid hero) */
+  .hero.gy{padding:6.4rem 0 5rem;text-align:center}
+  .gy-in{position:relative;z-index:1;max-width:780px;margin:0 auto}
+  .gy-in h1{font-size:clamp(2.7rem,6.4vw,4.4rem);margin:0 0 1.3rem}
+  .gy-lede{font-family:var(--serif);font-style:italic;font-size:1.22rem;line-height:1.6;
+    color:var(--muted);max-width:600px;margin:0 auto 2rem}
+  .statline{font:600 .88rem/1.9 var(--mono);letter-spacing:.05em;color:var(--fg);margin:0 0 .7rem}
+  .statline b{color:var(--accent);font-weight:600;font-size:1.02rem}
+  /* five stats are wide; shrink rather than orphan a label onto its own line */
+  @media(max-width:980px){.statline{font-size:.78rem;letter-spacing:.03em}}
+  @media(max-width:680px){.statline{font-size:.70rem;letter-spacing:.02em}}
+  .statnote{font-size:.82rem;color:var(--faint);max-width:540px;margin:0 auto 2.2rem;line-height:1.55}
+  .gy-ctas{margin:0 0 1.4rem}
+  .gy-in .creed{text-align:center;max-width:620px;margin-left:auto;margin-right:auto}
+  .idwall{position:absolute;inset:-30px -10px;display:flex;flex-wrap:wrap;gap:18px 26px;
+    justify-content:space-between;align-content:space-between;padding:6px;opacity:.06;
+    font:600 10.5px var(--mono);color:var(--accent);pointer-events:none;user-select:none;z-index:0}
+  @media(max-width:640px){.idwall{gap:12px 16px;opacity:.05}}
+  #gv-secbtn{position:fixed;right:22px;bottom:64px;z-index:30;background:var(--panel);
+    border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:9px 13px;
+    font:600 .78rem/1 var(--sans);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .2s}
+  #gv-secbtn.show{opacity:1;pointer-events:auto}
+  #gv-secbtn:hover{color:var(--accent);border-color:var(--accent)}
+  @media(min-width:1471px){#gv-secbtn{display:none}}
+
+  /* ---------- atmosphere & choreography ---------- */
+  ::selection{background:var(--accent);color:var(--accent-ink)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  #grain{position:fixed;inset:0;z-index:39;pointer-events:none;opacity:.05;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E")}
+  #vignette{position:fixed;inset:0;z-index:30;pointer-events:none;opacity:.5;
+    background:radial-gradient(ellipse 120% 90% at 50% 28%,transparent 55%,rgba(0,0,0,.5) 100%)}
+  .wrap.narrow p{font-size:1.02rem;line-height:1.75}
+  .kicker::before{content:"";display:block;width:42px;height:1px;background:var(--accent);
+    opacity:.55;margin:0 0 .95rem}
+  .gy-in .kicker::before{margin:0 auto .95rem}
+  .dropcap::first-letter{font-family:var(--serif);font-size:3.1em;line-height:.82;float:left;
+    padding:.06em .12em 0 0;color:var(--accent)}
+  .pull{font-family:var(--serif);font-style:italic;font-size:1.3rem;line-height:1.55;
+    color:var(--fg);text-align:center;max-width:560px;margin:2.6rem auto .6rem;padding:1.4rem 0;
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  tr.gv-row td:first-child{border-left:2px solid transparent;transition:border-color .18s}
+  tr.gv-row:hover td:first-child{border-left-color:var(--accent)}
+  .gv-detail .dcard{opacity:0;transform:translateY(-5px);transition:opacity .3s .08s ease,transform .3s .08s ease}
+  tr.gv-detail.open .dcard{opacity:1;transform:none}
+  .rite{text-align:center;padding:5rem 0 1rem}
+  .rite .r-rule{width:42px;height:1px;background:var(--accent);opacity:.55;margin:0 auto 1.6rem}
+  .rite-line{font-family:var(--serif);font-size:1.6rem;color:var(--fg);margin:0 0 .5rem}
+  .rite-sub{font-size:.9rem;color:var(--faint)}
+  #gv-top,#gv-secbtn{background:color-mix(in srgb,var(--panel) 75%,transparent);backdrop-filter:blur(8px)}
+  .idwall span.fl{animation:gvfl var(--fd,7s) ease-in-out var(--fdel,0s) infinite}
+  @keyframes gvfl{0%,100%{opacity:1}50%{opacity:.15}}
+  .js .rv{opacity:0;transform:translateY(14px);
+    transition:opacity .65s cubic-bezier(.2,.6,.2,1),transform .65s cubic-bezier(.2,.6,.2,1)}
+  .js .rv.on{opacity:1;transform:none}
+  .js .gy-in>*{opacity:0;transform:translateY(18px);filter:blur(6px);
+    animation:gvin 1.5s cubic-bezier(.16,.7,.2,1) forwards}
+  .js .gy-in>:nth-child(1){animation-delay:.2s}
+  .js .gy-in>:nth-child(2){animation-delay:.65s}
+  .js .gy-in>:nth-child(3){animation-delay:1.35s}
+  .js .gy-in>:nth-child(4){animation-delay:2.1s}
+  .js .gy-in>:nth-child(5){animation-delay:2.75s}
+  .js .gy-in>:nth-child(6){animation-delay:3.3s}
+  .js .gy-in>:nth-child(7){animation-delay:3.75s}
+  @keyframes gvin{60%{filter:blur(0)}to{opacity:1;transform:none;filter:blur(0)}}
+  .js .gy-in h1 em{opacity:0;animation:gvem .8s ease 2.15s forwards}
+  @keyframes gvem{to{opacity:1}}
+  .js .idwall{opacity:0;animation:gvwall 3.2s ease .4s forwards}
+  @keyframes gvwall{to{opacity:.06}}
+  @media (prefers-reduced-motion:reduce){
+    .js .rv,.js .gy-in>*,.js .gy-in h1 em{opacity:1!important;transform:none!important;
+      animation:none!important;filter:none!important}
+    .js .idwall{opacity:.06!important;animation:none!important}
+    .idwall span.fl{animation:none}
+    .gv-detail .dcard{transition:none}
+    #grain{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="gv-progress"></div>
+<div id="vignette" aria-hidden="true"></div>
+<div id="grain" aria-hidden="true"></div>
+
+<div class="topbar"><div class="in">
+  <a class="brand" href="/">Ayan Jain · Backtest Audit</a>
+  <nav class="nav">
+    <a href="#retractions">Retractions</a>
+    <a href="#ledger">The ledger</a>
+    <a href="#lessons">What it says</a>
+  <a href="#strength">Evidence strength</a>
+  <a href="#limits">Known limits</a>
+  <a href="#provenance">Provenance</a>
+    <a class="go" href="start.html">Start a Check</a>
+  </nav>
+</div></div>
+
+<nav class="rail" aria-label="Sections">
+  <a href="#story">Why this exists</a>
+  <a href="#six">Six graves to start</a>
+  <a href="#retractions">The retractions</a>
+  <a href="#ledger">The ledger</a>
+  <a class="sub" href="#cls-no-signal">Nothing there<span class="n">51</span></a>
+  <a class="sub" href="#cls-infra-invalid">Broken test<span class="n">11</span></a>
+  <a class="sub" href="#cls-cost-wall">Costs ate it<span class="n">11</span></a>
+  <a class="sub" href="#cls-regime">One era only<span class="n">5</span></a>
+  <a class="sub" href="#cls-handed-back">Edge given back<span class="n">6</span></a>
+  <a class="sub" href="#cls-structural-wall">Market said no<span class="n">1</span></a>
+  <a href="#lessons">What it says</a>
+  <a href="#strength">Evidence strength</a>
+  <a href="#limits">Known limits</a>
+  <a href="#provenance">Provenance</a>
+  <a href="#method">Run your own</a>
+</nav>
+
+<div class="hero gy"><div class="wrap" style="position:relative">
+  <div class="idwall" aria-hidden="true"><span>G-001</span> <span>G-002</span> <span>G-003</span> <span>G-004</span> <span>G-005</span> <span>G-006</span> <span>G-007</span> <span>G-008</span> <span>G-009</span> <span>G-010</span> <span>G-011</span> <span>G-012</span> <span>G-013</span> <span>G-014</span> <span>G-015</span> <span>G-016</span> <span>G-017</span> <span>G-018</span> <span>G-019</span> <span>G-020</span> <span>G-021</span> <span>G-022</span> <span>G-023</span> <span>G-024</span> <span>G-025</span> <span>G-026</span> <span>G-027</span> <span>G-028</span> <span>G-029</span> <span>G-030</span> <span>G-031</span> <span>G-032</span> <span>G-033</span> <span>G-034</span> <span>G-035</span> <span>G-036</span> <span>G-037</span> <span>G-038</span> <span>G-039</span> <span>G-040</span> <span>G-041</span> <span>G-042</span> <span>G-043</span> <span>G-044</span> <span>G-045</span> <span>G-046</span> <span>G-047</span> <span>G-048</span> <span>G-049</span> <span>G-050</span> <span>G-051</span> <span>G-052</span> <span>G-053</span> <span>G-054</span> <span>G-055</span> <span>G-056</span> <span>G-057</span> <span>G-058</span> <span>G-059</span> <span>G-060</span> <span>G-061</span> <span>G-062</span> <span>G-063</span> <span>G-064</span> <span>G-065</span> <span>G-066</span> <span>G-067</span> <span>G-068</span> <span>G-069</span> <span>G-070</span> <span>G-071</span> <span>G-072</span> <span>G-073</span> <span>G-074</span> <span>G-075</span> <span>G-076</span> <span>G-077</span> <span>G-078</span> <span>G-079</span> <span>G-080</span> <span>G-081</span> <span>G-082</span> <span>G-083</span> <span>G-084</span> <span>G-085</span> <span>G-086</span> <span>G-087</span> <span>G-088</span> <span>G-089</span> <span>G-090</span> <span>G-091</span> <span>G-092</span> <span>G-093</span> <span>G-094</span> <span>G-095</span> <span>G-096</span> <span>G-097</span> <span>G-098</span> <span>G-099</span> <span>G-100</span> <span>G-101</span> <span>G-102</span> <span>G-103</span> <span>G-104</span> <span>G-105</span> <span>G-106</span> <span>G-107</span> <span>G-108</span> <span>G-109</span> <span>G-110</span> <span>G-111</span> <span>G-112</span></div>
+  <div class="gy-in">
+    <div class="kicker">A public ledger of dead strategies</div>
+    <h1>The Graveyard<em>.</em></h1>
+    <p class="gy-lede">"The graveyard is the most informative dataset I own,
+    and almost nobody keeps one."</p>
+    <p class="statline"><b class="cnt" data-t="155">155</b> STRATEGIES &nbsp;&middot;&nbsp; <b class="cnt" data-t="112">112</b> ENTRIES &nbsp;&middot;&nbsp; <b class="cnt" data-t="2123">2,123</b> CONFIGS
+    &nbsp;&middot;&nbsp; <b class="cnt" data-t="12">12</b> SURVIVED &nbsp;&middot;&nbsp; <b class="cnt" data-t="5">5</b> RETRACTIONS</p>
+    <p class="statnote">More strategies than entries, because fourteen entries are families:
+    one row can hold eleven separate ideas. The ledger reported 112 until the bundles were
+    expanded by hand. And the true configuration count is higher still, because before this
+    ledger existed the discarded variants were never counted at all. Both admissions are the
+    artifact's own thesis applied to itself.</p>
+    <div class="gy-ctas">
+      <a class="cta" href="https://github.com/Finance-broski/graveyard">The repo &amp; method</a>
+      <a class="cta2" href="#ledger">Walk the ledger ↓</a>
+    </div>
+    <p class="creed">Every verdict with its numbers. Every failure on the record. Every retraction in public.</p>
+  </div>
+</div></div>
+
+<div class="wrap narrow">
+
+<section id="story">
+  <div class="kicker">I &middot; Why publish failures</div>
+  <h2>Everyone publishes their wins. Nobody publishes their denominator.</h2>
+  <p class="dropcap">That asymmetry is survivorship bias applied to research itself, and it is the reason most
+  published backtests cannot be trusted: you are looking at the best row of a table you were
+  never shown. This page is the table.</p>
+  <p>I run a systematic book on Indian markets and a research process that kills most of what it
+  touches. The kills are not the waste product of that process; they are most of what the process
+  knows. A strategy that survived 155 funerals means something different from a strategy that
+  survived none.</p>
+</section>
+
+<section id="six">
+  <div class="kicker">II &middot; If you only read six</div>
+  <h2>Six graves to start with.</h2>
+  <div class="six">
+    <a href="#G-052"><span class="gid">G-052</span><b>The one we retracted</b><p>A +50bps/day short at t=5.1 that used the future: full-day volume inside a 09:45 signal. Point-in-time, it loses money. Retracted with its whole downstream.</p></a>
+    <a href="#G-012"><span class="gid">G-012</span><b>Momentum in costume</b><p>F&O-inclusion repricing, +10% in 60 days, t=6.5. Died to a momentum-matched control: the event was carrying a factor, not an edge.</p></a>
+    <a href="#G-015"><span class="gid">G-015</span><b>The 200-EMA folklore</b><p>The most-watched line on retail charts. Touches lose to a near-miss control that holds nothing: the folklore fails its own bar.</p></a>
+    <a href="#G-020"><span class="gid">G-020</span><b>78 ways to buy straddles</b><p>Every intraday entry-by-hold cell for buying NIFTY ATM premium: negative. All 78 of them.</p></a>
+    <a href="#G-058"><span class="gid">G-058</span><b>Efficient to the cost frontier</b><p>A 15-feature reversal composite with OOS IC at t=13, genuinely real, and net-negative at every venue that would fill it. The market is efficient exactly to the cost line.</p></a>
+    <a href="#G-069"><span class="gid">G-069</span><b>The crash test</b><p>Single-stock wing-selling: real calm-market alpha both sides, then one COVID month erases three years. Predicted -25%, realized -24%.</p></a>
+  </div>
+  <p class="fine">Each card links to its row. The other 79 are below, and the ledger
+  search finds anything.</p>
+</section>
+
+<section id="retractions">
+  <div class="kicker">III &middot; The credibility core</div>
+  <h2>Five times the test itself was wrong, and I said so in public.</h2>
+  <p class="sub">Kills prove discipline. Retractions prove the discipline points at me too.</p>
+  <div class="retr"><span class="tag">G-052 · RETRACTED 2026-07-26</span>
+    <b>The dump-day short</b>
+    <p>A +50bps/day intraday short printed t=5.1 and survived a first audit. It used full-day
+    volume inside a 09:45 entry signal: the volume was caused by the outcome it predicted. The
+    point-in-time version loses 15bps/day. Retracted with its entire downstream: pro-forma
+    Sharpes, a 25.5% CAGR three-way book, a leverage plan. It propagated four working sessions
+    before I caught it. That is the honest speed of these errors.</p></div>
+  <div class="retr"><span class="tag">G-053 · RETRACTED 2026-07-26</span>
+    <b>The pump-long twin</b>
+    <p>Same look-ahead, opposite sign: claimed +64bps at t=7.4, point-in-time reality -48bps at
+    t=-11.9. A signal that flips from monster to disaster under a timestamp audit was never a
+    signal.</p></div>
+  <div class="retr"><span class="tag">G-014 · RETRACTED 2026-07-28</span>
+    <b>The Kelly-Jiang mechanism claim</b>
+    <p>My published explanation for why a paper failed to replicate in India, circuit-band
+    censoring, was itself wrong: censoring is ~4% and the effect was threshold geometry.
+    Retracted the explanation, kept the kill.</p></div>
+  <div class="retr"><span class="tag">G-092 · RETRACTED 2026-07-24</span>
+    <b>The cost-shifted t-stat</b>
+    <p>I t-tested a return series with a constant cost subtracted, which inflates |t|
+    mechanically. Raw t was insignificant. Standing rule born: significance on raw returns,
+    profitability on net, never t-test a deterministic constant.</p></div>
+  <div class="retr"><span class="tag">G-103 · RETRACTED 2026-07-25</span>
+    <b>The double-counted lever</b>
+    <p>I proposed a new structural improvement that was already live in the book's canonical
+    configuration, and retracted the pro-forma. Read the live config before proposing
+    structure.</p></div>
+  <div class="pull">If you have never retracted anything,<br>you have not looked hard enough at your own work.</div>
+</section>
+
+</div>
+<div class="wrap">
+<section id="ledger">
+  <div class="kicker">IV &middot; The ledger</div>
+  <h2>112 rows, grouped by cause of death.</h2>
+  <p class="sub">85 rows publish below, in full or in redacted form. 24 sit too
+  close to the live book and are withheld pending leak review: counted here, never hidden, and
+  they publish redacted as review completes. A further 3 are business and go-to-market
+  kills rather than strategy tests, so they are counted but not shown, because nothing in them
+  is usable by anyone reading this. Configs counts preregistered cells actually run.
+  Click any row for its full card; click an id to link straight to that grave. Detailed
+  autopsies are being added over time.</p>
+  <div class="chips">
+    <a href="#cls-no-signal">Nothing there <b>51</b></a>
+    <a href="#cls-infra-invalid">Broken test <b>11</b></a>
+    <a href="#cls-cost-wall">Costs ate it <b>11</b></a>
+    <a href="#cls-regime">One era only <b>5</b></a>
+    <a href="#cls-handed-back">Edge given back <b>6</b></a>
+    <a href="#cls-structural-wall">Market said no <b>1</b></a>
+  </div>
+  <div class="gv-search">
+    <input id="gv-q" type="search" placeholder="Search the dead: momentum, straddle, look-ahead, t=32, orb..." autocomplete="off">
+    <span id="gv-count">88 of 88 shown</span>
+  </div>
+
+<div class="gv-sec" id="cls-no-signal">
+<div class="gv-class"><h3>Nothing there</h3><span class="n">51</span><code class="gv-slug">no-signal</code></div>
+<p class="gv-def">the hypothesis produced nothing once artifacts and controls were applied</p>
+<div class="gv-tblwrap"><table class="gv">
+<tr><th>id</th><th>killed</th><th>hypothesis</th><th>class</th><th>preregistered bar</th><th>verdict, with numbers</th><th>configs</th><th>receipt</th></tr>
+<tr id="G-001" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-001">G-001</a><span class="chev">&#9656;</span></td><td>2026-07-30</td><td>Option-seller "adjustments" (roll untested in) improve VRP shape</td><td>no-signal</td><td>beat static on mean AND p5, net</td><td>mean 10.3 to 0.8 pts/wk, tail WORSE (-481 vs -428)</td><td>2 runs x 256 cycles</td><td>HUNT_LEDGER K4</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Option-seller "adjustments" (roll untested in) improve VRP shape</p><div class="df"><span class="k">killed</span><span class="w">2026-07-30</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">beat static on mean AND p5, net</span><span class="k">verdict</span><span class="w">mean 10.3 to 0.8 pts/wk, tail WORSE (-481 vs -428)</span><span class="k">configs run</span><span class="w">2 runs x 256 cycles</span><span class="k">receipt</span><span class="w">HUNT_LEDGER K4</span></div><div class="dlink"><code>#G-001</code><button data-g="G-001">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-003" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-003">G-003</a><span class="chev">&#9656;</span></td><td>2026-07-30</td><td>Convert-to-fly on breach</td><td>no-signal</td><td>same</td><td>worst week of program (-680 vs -428 static)</td><td>256</td><td>K4</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Convert-to-fly on breach</p><div class="df"><span class="k">killed</span><span class="w">2026-07-30</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">same</span><span class="k">verdict</span><span class="w">worst week of program (-680 vs -428 static)</span><span class="k">configs run</span><span class="w">256</span><span class="k">receipt</span><span class="w">K4</span></div><div class="dlink"><code>#G-003</code><button data-g="G-003">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-004" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-004">G-004</a><span class="chev">&#9656;</span></td><td>2026-07-30</td><td>Stop-at-2x-credit on weekly strangle</td><td>no-signal</td><td>same</td><td>tail identical to static, mean -1.8; stops fire post-extraction</td><td>256</td><td>K4</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Stop-at-2x-credit on weekly strangle</p><div class="df"><span class="k">killed</span><span class="w">2026-07-30</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">same</span><span class="k">verdict</span><span class="w">tail identical to static, mean -1.8; stops fire post-extraction</span><span class="k">configs run</span><span class="w">256</span><span class="k">receipt</span><span class="w">K4</span></div><div class="dlink"><code>#G-004</code><button data-g="G-004">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-005" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-005">G-005</a><span class="chev">&#9656;</span></td><td>2026-07-30</td><td>Zero-hero: expiry-day ATM straddle, tiered exits (8x/5x/4x)</td><td>no-signal</td><td>mean net &gt; 0, t≥2</td><td>all 6 exitxentry cells negative; tiers hit 3-9% of expiries</td><td>6 x ~256</td><td>K5</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Zero-hero: expiry-day ATM straddle, tiered exits (8x/5x/4x)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-30</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">mean net &gt; 0, t≥2</span><span class="k">verdict</span><span class="w">all 6 exitxentry cells negative; tiers hit 3-9% of expiries</span><span class="k">configs run</span><span class="w">6 x ~256</span><span class="k">receipt</span><span class="w">K5</span></div><div class="dlink"><code>#G-005</code><button data-g="G-005">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-006" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-006">G-006</a><span class="chev">&#9656;</span></td><td>2026-07-30</td><td>ATM CE/PE parity gate improves expiry-day entries</td><td>no-signal</td><td>gated beats ungated</td><td>gate deletes 84% of days, adds nothing (subsample noise)</td><td>2</td><td>K5 audit</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">ATM CE/PE parity gate improves expiry-day entries</p><div class="df"><span class="k">killed</span><span class="w">2026-07-30</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">gated beats ungated</span><span class="k">verdict</span><span class="w">gate deletes 84% of days, adds nothing (subsample noise)</span><span class="k">configs run</span><span class="w">2</span><span class="k">receipt</span><span class="w">K5 audit</span></div><div class="dlink"><code>#G-006</code><button data-g="G-006">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-007" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-007">G-007</a><span class="chev">&#9656;</span></td><td>2026-07-30</td><td>Zero-hero OTM ladder (ATM+1/+2/+4, distance + premium-targeted)</td><td>no-signal</td><td>any cell mean&gt;0 t≥2</td><td>18+6 cells all negative, t to -10.7; monotone worse further OTM</td><td>24</td><td>K6</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Zero-hero OTM ladder (ATM+1/+2/+4, distance + premium-targeted)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-30</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">any cell mean&gt;0 t≥2</span><span class="k">verdict</span><span class="w">18+6 cells all negative, t to -10.7; monotone worse further OTM</span><span class="k">configs run</span><span class="w">24</span><span class="k">receipt</span><span class="w">K6</span></div><div class="dlink"><code>#G-007</code><button data-g="G-007">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-008" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-008">G-008</a><span class="chev">&#9656;</span></td><td>2026-07-30</td><td>"Buy cheap gamma" conditioning on expiry afternoons</td><td>no-signal</td><td>cheap quintile ≥ 0</td><td>INVERTED: cheapest quintile worst (-131 to -160% of outlay)</td><td>20</td><td>K6b</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">"Buy cheap gamma" conditioning on expiry afternoons</p><div class="df"><span class="k">killed</span><span class="w">2026-07-30</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">cheap quintile ≥ 0</span><span class="k">verdict</span><span class="w">INVERTED: cheapest quintile worst (-131 to -160% of outlay)</span><span class="k">configs run</span><span class="w">20</span><span class="k">receipt</span><span class="w">K6b</span></div><div class="dlink"><code>#G-008</code><button data-g="G-008">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-011" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-011">G-011</a><span class="chev">&#9656;</span></td><td>2026-07-29</td><td>Week-1 expiry long strangles (far-week premium cheap)</td><td>no-signal</td><td>k1-2 ratio ≠ theoretical</td><td>ratio 0.6746 vs 0.6745 median-|z| - priced to 4 decimals</td><td>4</td><td>K2</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Week-1 expiry long strangles (far-week premium cheap)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-29</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">k1-2 ratio ≠ theoretical</span><span class="k">verdict</span><span class="w">ratio 0.6746 vs 0.6745 median-|z| - priced to 4 decimals</span><span class="k">configs run</span><span class="w">4</span><span class="k">receipt</span><span class="w">K2</span></div><div class="dlink"><code>#G-011</code><button data-g="G-011">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-012" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-012">G-012</a><span class="chev">&#9656;</span></td><td>2026-07-29</td><td>F&amp;O-inclusion repricing (+10%/60d, shortability story)</td><td>no-signal</td><td>survive momentum-matched control</td><td>t=6.51 raw to control -0.5; 219 events = 39 waves; momentum in costume</td><td>6</td><td>K3 + fo_inclusion_test</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">F&amp;O-inclusion repricing (+10%/60d, shortability story)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-29</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">survive momentum-matched control</span><span class="k">verdict</span><span class="w">t=6.51 raw to control -0.5; 219 events = 39 waves; momentum in costume</span><span class="k">configs run</span><span class="w">6</span><span class="k">receipt</span><span class="w">K3 + fo_inclusion_test</span></div><div class="autopsy">F&amp;O-inclusion repricing, +10% in 60 days, t=6.5. Died to a momentum-matched control: the event was carrying a factor, not an edge.</div><div class="dlink"><code>#G-012</code><button data-g="G-012">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-015" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-015">G-015</a><span class="chev">&#9656;</span></td><td>2026-07-31</td><td>200-EMA touch = support (the folklore)</td><td>no-signal</td><td>touch beats near-miss control t≥2</td><td>touch +0.23% vs control +0.39% fwd10, t -2.5; hold rate 36.7%</td><td>5</td><td>ema200_test</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">200-EMA touch = support (the folklore)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-31</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">touch beats near-miss control t≥2</span><span class="k">verdict</span><span class="w">touch +0.23% vs control +0.39% fwd10, t -2.5; hold rate 36.7%</span><span class="k">configs run</span><span class="w">5</span><span class="k">receipt</span><span class="w">ema200_test</span></div><div class="autopsy">The most-watched line on retail charts. Touches lose to a near-miss control that holds nothing: the folklore fails its own bar.</div><div class="dlink"><code>#G-015</code><button data-g="G-015">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-016" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-016">G-016</a><span class="chev">&#9656;</span></td><td>2026-07-31</td><td>The 200 specifically is special vs unwatched lengths</td><td>no-signal</td><td>200 beats placebo family beyond their spread</td><td>150/175/225/250 hold 36.3/36.4/36.3/35.9 vs 36.7 - inside noise</td><td>5</td><td>ema200_test</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">The 200 specifically is special vs unwatched lengths</p><div class="df"><span class="k">killed</span><span class="w">2026-07-31</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">200 beats placebo family beyond their spread</span><span class="k">verdict</span><span class="w">150/175/225/250 hold 36.3/36.4/36.3/35.9 vs 36.7 - inside noise</span><span class="k">configs run</span><span class="w">5</span><span class="k">receipt</span><span class="w">ema200_test</span></div><div class="dlink"><code>#G-016</code><button data-g="G-016">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-017" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-017">G-017</a><span class="chev">&#9656;</span></td><td>2026-07-31</td><td>Confirmation pairing rescues EMA touches (RSI/volume)</td><td>no-signal</td><td>any pairing beats plain control</td><td>all pairings ≤ +0.50 vs control +0.59 (PIT-500 harmonized: vol combo -0.01)</td><td>8</td><td>ema200_paired + harmonized</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Confirmation pairing rescues EMA touches (RSI/volume)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-31</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">any pairing beats plain control</span><span class="k">verdict</span><span class="w">all pairings ≤ +0.50 vs control +0.59 (PIT-500 harmonized: vol combo -0.01)</span><span class="k">configs run</span><span class="w">8</span><span class="k">receipt</span><span class="w">ema200_paired + harmonized</span></div><div class="dlink"><code>#G-017</code><button data-g="G-017">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-018" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-018">G-018</a><span class="chev">&#9656;</span></td><td>2026-07-30</td><td>Retail TA battery long entries (RSI&lt;30, MACD cross, BB touch, golden cross, 55d, vol-chase)</td><td>no-signal</td><td>any |t|≥3 positive</td><td>nothing positive clears; significant cells all NEGATIVE (BB -0.70%/21d t-5.1)</td><td>14</td><td>ta_battery</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Retail TA battery long entries (RSI&lt;30, MACD cross, BB touch, golden cross, 55d, vol-chase)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-30</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">any |t|≥3 positive</span><span class="k">verdict</span><span class="w">nothing positive clears; significant cells all NEGATIVE (BB -0.70%/21d t-5.1)</span><span class="k">configs run</span><span class="w">14</span><span class="k">receipt</span><span class="w">ta_battery</span></div><div class="dlink"><code>#G-018</code><button data-g="G-018">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-019" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-019">G-019</a><span class="chev">&#9656;</span></td><td>2026-07-30</td><td>Indicator confluence (3-4 agreeing = high-probability setup)</td><td>no-signal</td><td>monotone improvement in k, top cell t≥2.3</td><td>V-shaped: k=2 worst cell of program (-0.60%/21d t-5.2); k=3-4 positive but ~once/stock/decade, thin after costs</td><td>16</td><td>ta_confluence</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Indicator confluence (3-4 agreeing = high-probability setup)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-30</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">monotone improvement in k, top cell t≥2.3</span><span class="k">verdict</span><span class="w">V-shaped: k=2 worst cell of program (-0.60%/21d t-5.2); k=3-4 positive but ~once/stock/decade, thin after costs</span><span class="k">configs run</span><span class="w">16</span><span class="k">receipt</span><span class="w">ta_confluence</span></div><div class="dlink"><code>#G-019</code><button data-g="G-019">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-021" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-021">G-021</a><span class="chev">&#9656;</span></td><td>2026-06-20</td><td>Directional time-of-day edge on NIFTY</td><td>no-signal</td><td>P(close&gt;open | window) ≠ .5</td><td>P = .508; nothing tradable</td><td>~10</td><td>pattern scan</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Directional time-of-day edge on NIFTY</p><div class="df"><span class="k">killed</span><span class="w">2026-06-20</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">P(close&gt;open | window) ≠ .5</span><span class="k">verdict</span><span class="w">P = .508; nothing tradable</span><span class="k">configs run</span><span class="w">~10</span><span class="k">receipt</span><span class="w">pattern scan</span></div><div class="dlink"><code>#G-021</code><button data-g="G-021">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-026" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-026">G-026</a><span class="chev">&#9656;</span></td><td>2026-07-02</td><td>Options-sentiment cross-sectional contrarian L/S</td><td>no-signal</td><td>survive senior-audit noise bar</td><td>Sh +0.59 gross, cut as noise at audit (corr-to-mom +0.10)</td><td>~8</td><td>options_sentiment memory</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Options-sentiment cross-sectional contrarian L/S</p><div class="df"><span class="k">killed</span><span class="w">2026-07-02</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">survive senior-audit noise bar</span><span class="k">verdict</span><span class="w">Sh +0.59 gross, cut as noise at audit (corr-to-mom +0.10)</span><span class="k">configs run</span><span class="w">~8</span><span class="k">receipt</span><span class="w">options_sentiment memory</span></div><div class="dlink"><code>#G-026</code><button data-g="G-026">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-027" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-027">G-027</a><span class="chev">&#9656;</span></td><td>2026-07-0x</td><td>Participant-wise options positioning signal</td><td>no-signal</td><td>survive audit</td><td>initial WIN, cut as noise at senior audit</td><td>~6</td><td>in_hand_signal memory</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Participant-wise options positioning signal</p><div class="df"><span class="k">killed</span><span class="w">2026-07-0x</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">survive audit</span><span class="k">verdict</span><span class="w">initial WIN, cut as noise at senior audit</span><span class="k">configs run</span><span class="w">~6</span><span class="k">receipt</span><span class="w">in_hand_signal memory</span></div><div class="dlink"><code>#G-027</code><button data-g="G-027">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-028" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-028">G-028</a><span class="chev">&#9656;</span></td><td>2026-07-0x</td><td>Rollover % as signal</td><td>no-signal</td><td>IC t≥2</td><td>killed</td><td>~4</td><td>in_hand memory</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Rollover % as signal</p><div class="df"><span class="k">killed</span><span class="w">2026-07-0x</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">IC t≥2</span><span class="k">verdict</span><span class="w">killed</span><span class="k">configs run</span><span class="w">~4</span><span class="k">receipt</span><span class="w">in_hand memory</span></div><div class="dlink"><code>#G-028</code><button data-g="G-028">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-029" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-029">G-029</a><span class="chev">&#9656;</span></td><td>2026-07-0x</td><td>Promoter-stake change (SHP) as signal</td><td>no-signal</td><td>IC t≥2</td><td>killed at F&amp;O-shortable universe (t 1.22)</td><td>~6</td><td>in_hand memory</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Promoter-stake change (SHP) as signal</p><div class="df"><span class="k">killed</span><span class="w">2026-07-0x</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">IC t≥2</span><span class="k">verdict</span><span class="w">killed at F&amp;O-shortable universe (t 1.22)</span><span class="k">configs run</span><span class="w">~6</span><span class="k">receipt</span><span class="w">in_hand memory</span></div><div class="dlink"><code>#G-029</code><button data-g="G-029">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-032" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-032">G-032</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>Delivery-conviction short signal</td><td>no-signal</td><td>survive on BORROWABLE universe (SLB re-open TESTED)</td><td>paper t3.75 to borrowable non-F&amp;O short-excess +0.1%/yr t0.0 hit48. The t lived in the untradeable illiquid tail</td><td>~10</td><td>KILL_AUDIT prize test</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Delivery-conviction short signal</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">survive on BORROWABLE universe (SLB re-open TESTED)</span><span class="k">verdict</span><span class="w">paper t3.75 to borrowable non-F&amp;O short-excess +0.1%/yr t0.0 hit48. The t lived in the untradeable illiquid tail</span><span class="k">configs run</span><span class="w">~10</span><span class="k">receipt</span><span class="w">KILL_AUDIT prize test</span></div><div class="dlink"><code>#G-032</code><button data-g="G-032">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-034" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-034">G-034</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>Promoter-selling short cluster</td><td>no-signal</td><td>same</td><td>borrowable universe short-excess +0.1%/yr t0.0 - same illiquid-tail evaporation. Generalization: SLB unlocks EVENTS, never continuous cross-sectional selection</td><td>~10</td><td>same</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Promoter-selling short cluster</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">same</span><span class="k">verdict</span><span class="w">borrowable universe short-excess +0.1%/yr t0.0 - same illiquid-tail evaporation. Generalization: SLB unlocks EVENTS, never continuous cross-sectional selection</span><span class="k">configs run</span><span class="w">~10</span><span class="k">receipt</span><span class="w">same</span></div><div class="dlink"><code>#G-034</code><button data-g="G-034">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-040" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-040">G-040</a><span class="chev">&#9656;</span></td><td>2026-07-0x</td><td>Multi-asset CTA sleeve</td><td>no-signal</td><td>adds to frontier</td><td>killed (thin, redundant)</td><td>~8</td><td>diversifier notes</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Multi-asset CTA sleeve</p><div class="df"><span class="k">killed</span><span class="w">2026-07-0x</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">adds to frontier</span><span class="k">verdict</span><span class="w">killed (thin, redundant)</span><span class="k">configs run</span><span class="w">~8</span><span class="k">receipt</span><span class="w">diversifier notes</span></div><div class="dlink"><code>#G-040</code><button data-g="G-040">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-042" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-042">G-042</a><span class="chev">&#9656;</span></td><td>2026-07-0x</td><td>Book-level vol targeting</td><td>no-signal</td><td>improves after diversification</td><td>redundant once diversified; killed</td><td>~4</td><td>diversifier notes</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Book-level vol targeting</p><div class="df"><span class="k">killed</span><span class="w">2026-07-0x</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">improves after diversification</span><span class="k">verdict</span><span class="w">redundant once diversified; killed</span><span class="k">configs run</span><span class="w">~4</span><span class="k">receipt</span><span class="w">diversifier notes</span></div><div class="dlink"><code>#G-042</code><button data-g="G-042">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-044" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-044">G-044</a><span class="chev">&#9656;</span></td><td>2026-07-18</td><td>FX F3/F4/F5 (breadth campaign)</td><td>no-signal</td><td>prereg bars</td><td>all three killed at preregistered bars; two adjacent candidates frozen or parked, identities withheld</td><td>~15</td><td>fx_prop memory</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">FX F3/F4/F5 (breadth campaign)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-18</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">prereg bars</span><span class="k">verdict</span><span class="w">all three killed at preregistered bars; two adjacent candidates frozen or parked, identities withheld</span><span class="k">configs run</span><span class="w">~15</span><span class="k">receipt</span><span class="w">fx_prop memory</span></div><div class="dlink"><code>#G-044</code><button data-g="G-044">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-049" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-049">G-049</a><span class="chev">&#9656;</span></td><td>2026-07-25</td><td>I1 intraday cross-sectional reversion (fade morning move into close)</td><td>no-signal</td><td>net ≥ +12bps, t≥3 gross</td><td>corr(morning,afternoon) +0.002; net -27bps/d</td><td>~8</td><td>INTRADAY_HUNT B1</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">I1 intraday cross-sectional reversion (fade morning move into close)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-25</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">net ≥ +12bps, t≥3 gross</span><span class="k">verdict</span><span class="w">corr(morning,afternoon) +0.002; net -27bps/d</span><span class="k">configs run</span><span class="w">~8</span><span class="k">receipt</span><span class="w">INTRADAY_HUNT B1</span></div><div class="dlink"><code>#G-049</code><button data-g="G-049">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-051" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-051">G-051</a><span class="chev">&#9656;</span></td><td>2026-07-25</td><td>I3 opening-range breakout/reversion</td><td>no-signal</td><td>same bars</td><td>corr +0.008; dead</td><td>~6</td><td>same</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">I3 opening-range breakout/reversion</p><div class="df"><span class="k">killed</span><span class="w">2026-07-25</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">same bars</span><span class="k">verdict</span><span class="w">corr +0.008; dead</span><span class="k">configs run</span><span class="w">~6</span><span class="k">receipt</span><span class="w">same</span></div><div class="dlink"><code>#G-051</code><button data-g="G-051">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-054" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-054">G-054</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>PIT trailing-volume rescue of continuation/reversion</td><td>no-signal</td><td>PIT filters revive edge</td><td>continuation WORSE with every filter; reversion-long = IS+/OOS- falling-knife lottery (median -63bps, win 38-44%)</td><td>~12</td><td>rescue attempt</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">PIT trailing-volume rescue of continuation/reversion</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">PIT filters revive edge</span><span class="k">verdict</span><span class="w">continuation WORSE with every filter; reversion-long = IS+/OOS- falling-knife lottery (median -63bps, win 38-44%)</span><span class="k">configs run</span><span class="w">~12</span><span class="k">receipt</span><span class="w">rescue attempt</span></div><div class="dlink"><code>#G-054</code><button data-g="G-054">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-055" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-055">G-055</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>OFS-day intraday short (scheduled forced-flow)</td><td>no-signal</td><td>net &gt; 0 tradeable</td><td>stock RISES on OFS day intraday (short -65bps t-3.1); anticipated flow is priced at the open</td><td>~6</td><td>final kills</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">OFS-day intraday short (scheduled forced-flow)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">net &gt; 0 tradeable</span><span class="k">verdict</span><span class="w">stock RISES on OFS day intraday (short -65bps t-3.1); anticipated flow is priced at the open</span><span class="k">configs run</span><span class="w">~6</span><span class="k">receipt</span><span class="w">final kills</span></div><div class="dlink"><code>#G-055</code><button data-g="G-055">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-056" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-056">G-056</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>F&amp;O ban-list entry short</td><td>no-signal</td><td>tradeable 09:45 entry</td><td>-6bps t-0.7 (drift spent by 09:45, open artifact); stop HURTS</td><td>~6</td><td>same</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">F&amp;O ban-list entry short</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">tradeable 09:45 entry</span><span class="k">verdict</span><span class="w">-6bps t-0.7 (drift spent by 09:45, open artifact); stop HURTS</span><span class="k">configs run</span><span class="w">~6</span><span class="k">receipt</span><span class="w">same</span></div><div class="dlink"><code>#G-056</code><button data-g="G-056">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-062" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-062">G-062</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>Option scalping - BUYING ATM intraday (mom/rev/burst, 0DTE+weekly)</td><td>no-signal</td><td>any cell positive</td><td>every cell negative (t -3.6 to -9.5, win 35-42%); bigger burst = worse (buying tops of mean-reverting moves); theta + double-spread + reversion all against buyer</td><td>~24</td><td>scalp mine</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Option scalping - BUYING ATM intraday (mom/rev/burst, 0DTE+weekly)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">any cell positive</span><span class="k">verdict</span><span class="w">every cell negative (t -3.6 to -9.5, win 35-42%); bigger burst = worse (buying tops of mean-reverting moves); theta + double-spread + reversion all against buyer</span><span class="k">configs run</span><span class="w">~24</span><span class="k">receipt</span><span class="w">scalp mine</span></div><div class="dlink"><code>#G-062</code><button data-g="G-062">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-063" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-063">G-063</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>Cross-sectional options-positioning micro panel (OI/PCR/IV/skew/buildup)</td><td>no-signal</td><td>OOS-replicate</td><td>NONE replicate (signs flip train/test)</td><td>~27</td><td>micro mine</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Cross-sectional options-positioning micro panel (OI/PCR/IV/skew/buildup)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">OOS-replicate</span><span class="k">verdict</span><span class="w">NONE replicate (signs flip train/test)</span><span class="k">configs run</span><span class="w">~27</span><span class="k">receipt</span><span class="w">micro mine</span></div><div class="dlink"><code>#G-063</code><button data-g="G-063">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-064" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-064">G-064</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>Directional macro cues (SP500/VIX overnight to NIFTY intraday)</td><td>no-signal</td><td>PIT tradeable direction</td><td>predicts the GAP only (+53% t22 = priced at open, untradeable); open-to-close is noise. 3rd look-ahead caught pre-claim</td><td>~10</td><td>macro mine</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Directional macro cues (SP500/VIX overnight to NIFTY intraday)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">PIT tradeable direction</span><span class="k">verdict</span><span class="w">predicts the GAP only (+53% t22 = priced at open, untradeable); open-to-close is noise. 3rd look-ahead caught pre-claim</span><span class="k">configs run</span><span class="w">~10</span><span class="k">receipt</span><span class="w">macro mine</span></div><div class="dlink"><code>#G-064</code><button data-g="G-064">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-066" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-066">G-066</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>Bulk-deal net-flow signal</td><td>no-signal</td><td>orthogonal to owned factors</td><td>decade-STABLE IC -4.62 t-5.7 (both halves!) BUT net-of-reversal t-0.7 = reversal in disguise. Decade-stable and still redundant</td><td>~8</td><td>bulk mine</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Bulk-deal net-flow signal</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">orthogonal to owned factors</span><span class="k">verdict</span><span class="w">decade-STABLE IC -4.62 t-5.7 (both halves!) BUT net-of-reversal t-0.7 = reversal in disguise. Decade-stable and still redundant</span><span class="k">configs run</span><span class="w">~8</span><span class="k">receipt</span><span class="w">bulk mine</span></div><div class="dlink"><code>#G-066</code><button data-g="G-066">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-068" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-068">G-068</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>Sell calls on insider-flagged "won't rise" names</td><td>no-signal</td><td>insider adds to call-selling EV</td><td>INVERTED: the insider signal adds ~0 to call-selling EV; the edge that exists is tail-shape, not direction</td><td>~18</td><td>sell_calls_insider</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Sell calls on insider-flagged "won't rise" names</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">insider adds to call-selling EV</span><span class="k">verdict</span><span class="w">INVERTED: the insider signal adds ~0 to call-selling EV; the edge that exists is tail-shape, not direction</span><span class="k">configs run</span><span class="w">~18</span><span class="k">receipt</span><span class="w">sell_calls_insider</span></div><div class="dlink"><code>#G-068</code><button data-g="G-068">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-072" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-072">G-072</a><span class="chev">&#9656;</span></td><td>≤2026-07-26</td><td>Wrong-signed factor family: quality, accel, lowvol-as-RETURN, breakouts, buy-the-middle, India-continuation-not-reversion</td><td>no-signal</td><td>-</td><td>each carried the OPPOSITE sign OOS or in controls</td><td>~6</td><td>KILL_AUDIT B1</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Wrong-signed factor family: quality, accel, lowvol-as-RETURN, breakouts, buy-the-middle, India-continuation-not-reversion</p><div class="df"><span class="k">killed</span><span class="w">≤2026-07-26</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">each carried the OPPOSITE sign OOS or in controls</span><span class="k">configs run</span><span class="w">~6</span><span class="k">receipt</span><span class="w">KILL_AUDIT B1</span></div><div class="dlink"><code>#G-072</code><button data-g="G-072">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-073" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-073">G-073</a><span class="chev">&#9656;</span></td><td>≤2026-07-26</td><td>OOS-collapse family: Follow-FII, Follow-Pro, resmom, most C-series, value_ey</td><td>no-signal</td><td>-</td><td>positive IS, dead OOS - the classic</td><td>~8</td><td>B1 + prereg batches</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">OOS-collapse family: Follow-FII, Follow-Pro, resmom, most C-series, value_ey</p><div class="df"><span class="k">killed</span><span class="w">≤2026-07-26</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">positive IS, dead OOS - the classic</span><span class="k">configs run</span><span class="w">~8</span><span class="k">receipt</span><span class="w">B1 + prereg batches</span></div><div class="dlink"><code>#G-073</code><button data-g="G-073">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-082" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-082">G-082</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>"Refine the graveyard" itself (the meta-hypothesis)</td><td>no-signal</td><td>-</td><td>refinement rescued NOTHING; every fixable-how was already refined to its next wall at kill time. The audit (re-classify by death reason) found the one dividend, refinement found zero</td><td>n/a</td><td>KILL_AUDIT bottom line</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">"Refine the graveyard" itself (the meta-hypothesis)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">refinement rescued NOTHING; every fixable-how was already refined to its next wall at kill time. The audit (re-classify by death reason) found the one dividend, refinement found zero</span><span class="k">configs run</span><span class="w">n/a</span><span class="k">receipt</span><span class="w">KILL_AUDIT bottom line</span></div><div class="dlink"><code>#G-082</code><button data-g="G-082">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-084" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-084">G-084</a><span class="chev">&#9656;</span></td><td>2026-07-02</td><td>H2: expiry-day pin drift via futures</td><td>no-signal</td><td>hit ≥55%, monotone in GEX</td><td>non-monotone noise, hit 48%</td><td>5</td><td>h2_pin</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">H2: expiry-day pin drift via futures</p><div class="df"><span class="k">killed</span><span class="w">2026-07-02</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">hit ≥55%, monotone in GEX</span><span class="k">verdict</span><span class="w">non-monotone noise, hit 48%</span><span class="k">configs run</span><span class="w">5</span><span class="k">receipt</span><span class="w">h2_pin</span></div><div class="dlink"><code>#G-084</code><button data-g="G-084">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-085" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-085">G-085</a><span class="chev">&#9656;</span></td><td>2026-07-02</td><td>H3: VRP roll-timing upgrade</td><td>no-signal</td><td>≥0.1%/cycle improvement</td><td>&lt;=5bps/cycle, under the bar</td><td>10</td><td>h3_rolltime</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">H3: VRP roll-timing upgrade</p><div class="df"><span class="k">killed</span><span class="w">2026-07-02</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">≥0.1%/cycle improvement</span><span class="k">verdict</span><span class="w">&lt;=5bps/cycle, under the bar</span><span class="k">configs run</span><span class="w">10</span><span class="k">receipt</span><span class="w">h3_rolltime</span></div><div class="dlink"><code>#G-085</code><button data-g="G-085">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-086" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-086">G-086</a><span class="chev">&#9656;</span></td><td>2026-07-02</td><td>H4: conditional overnight-gap continuation (gap x GEX)</td><td>no-signal</td><td>conditioning separates</td><td>negative everywhere that matters; gaps fade</td><td>6</td><td>h2_pin_h4_gap</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">H4: conditional overnight-gap continuation (gap x GEX)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-02</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">conditioning separates</span><span class="k">verdict</span><span class="w">negative everywhere that matters; gaps fade</span><span class="k">configs run</span><span class="w">6</span><span class="k">receipt</span><span class="w">h2_pin_h4_gap</span></div><div class="dlink"><code>#G-086</code><button data-g="G-086">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-087" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-087">G-087</a><span class="chev">&#9656;</span></td><td>2026-07-02</td><td>H5: open-auction IV-overshoot fade</td><td>no-signal</td><td>net Sharpe ≥1.5</td><td>"overshoot" is information, not dislocation: hit 33%, Sharpe -2.5 WRONG WAY</td><td>4</td><td>h3_h5</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">H5: open-auction IV-overshoot fade</p><div class="df"><span class="k">killed</span><span class="w">2026-07-02</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">net Sharpe ≥1.5</span><span class="k">verdict</span><span class="w">"overshoot" is information, not dislocation: hit 33%, Sharpe -2.5 WRONG WAY</span><span class="k">configs run</span><span class="w">4</span><span class="k">receipt</span><span class="w">h3_h5</span></div><div class="dlink"><code>#G-087</code><button data-g="G-087">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-093" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-093">G-093</a><span class="chev">&#9656;</span></td><td>2026-07-23</td><td>Circuit-lock continuation long (E16)</td><td>no-signal</td><td>-</td><td>KILL with sign REVERSED: next-open buying loses, t_raw ≈ -16 (reversal real, the opposite trade is cost-walled)</td><td>~6</td><td>E16</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Circuit-lock continuation long (E16)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-23</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">KILL with sign REVERSED: next-open buying loses, t_raw ≈ -16 (reversal real, the opposite trade is cost-walled)</span><span class="k">configs run</span><span class="w">~6</span><span class="k">receipt</span><span class="w">E16</span></div><div class="dlink"><code>#G-093</code><button data-g="G-093">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-094" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-094">G-094</a><span class="chev">&#9656;</span></td><td>2026-07-23</td><td>IPO lock-in expiry supply dip (E8)</td><td>no-signal</td><td>-</td><td>1,189 proxy events: no dip at proxy precision</td><td>~4</td><td>E8</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">IPO lock-in expiry supply dip (E8)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-23</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">1,189 proxy events: no dip at proxy precision</span><span class="k">configs run</span><span class="w">~4</span><span class="k">receipt</span><span class="w">E8</span></div><div class="dlink"><code>#G-094</code><button data-g="G-094">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-097" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-097">G-097</a><span class="chev">&#9656;</span></td><td>2026-07-24</td><td>Seasonal tilt inside live composite (C1-v2)</td><td>no-signal</td><td>-</td><td>fails inside the composite; C1 family closes fully</td><td>~5</td><td>C1-v2</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Seasonal tilt inside live composite (C1-v2)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-24</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">fails inside the composite; C1 family closes fully</span><span class="k">configs run</span><span class="w">~5</span><span class="k">receipt</span><span class="w">C1-v2</span></div><div class="dlink"><code>#G-097</code><button data-g="G-097">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-098" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-098">G-098</a><span class="chev">&#9656;</span></td><td>2026-07-24</td><td>MCX EOD momentum TS+XS (C6)</td><td>no-signal</td><td>-</td><td>TS +0.3%/yr t0.08, XS -1.0% t-0.36; consistent with 6-name breadth floor</td><td>~4</td><td>C6</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">MCX EOD momentum TS+XS (C6)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-24</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">TS +0.3%/yr t0.08, XS -1.0% t-0.36; consistent with 6-name breadth floor</span><span class="k">configs run</span><span class="w">~4</span><span class="k">receipt</span><span class="w">C6</span></div><div class="dlink"><code>#G-098</code><button data-g="G-098">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-101" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-101">G-101</a><span class="chev">&#9656;</span></td><td>2026-07-24</td><td>Crash tail-typing flags (options/basis/compression)</td><td>no-signal</td><td>-</td><td>ALL THREE fail as flags; "far from flag-grade"</td><td>~9</td><td>tail-typing</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Crash tail-typing flags (options/basis/compression)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-24</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">ALL THREE fail as flags; "far from flag-grade"</span><span class="k">configs run</span><span class="w">~9</span><span class="k">receipt</span><span class="w">tail-typing</span></div><div class="dlink"><code>#G-101</code><button data-g="G-101">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-104" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-104">G-104</a><span class="chev">&#9656;</span></td><td>2026-07-20</td><td>Correlation-regime reversion + index lead-lag + flow persistence</td><td>no-signal</td><td>-</td><td>clean DOWN moves do NOT revert (sign wrong, era-flips -1.03/+0.43/+0.59); lead-lag killed; flow-persistence dead</td><td>~15</td><td>PREREG_CORR_REGIME</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Correlation-regime reversion + index lead-lag + flow persistence</p><div class="df"><span class="k">killed</span><span class="w">2026-07-20</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">clean DOWN moves do NOT revert (sign wrong, era-flips -1.03/+0.43/+0.59); lead-lag killed; flow-persistence dead</span><span class="k">configs run</span><span class="w">~15</span><span class="k">receipt</span><span class="w">PREREG_CORR_REGIME</span></div><div class="dlink"><code>#G-104</code><button data-g="G-104">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-105" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-105">G-105</a><span class="chev">&#9656;</span></td><td>2026-07-20</td><td>Long-only reversal suite (T1-T4) + "buy the middle"</td><td>no-signal</td><td>-</td><td>ALL FOUR killed, the sign is the finding (India continues, doesn't revert); buy-the-middle killed BY THE VOLATILITY CONTROL (was lowvol in costume)</td><td>~12</td><td>PREREG_LONGONLY</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Long-only reversal suite (T1-T4) + "buy the middle"</p><div class="df"><span class="k">killed</span><span class="w">2026-07-20</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">ALL FOUR killed, the sign is the finding (India continues, doesn't revert); buy-the-middle killed BY THE VOLATILITY CONTROL (was lowvol in costume)</span><span class="k">configs run</span><span class="w">~12</span><span class="k">receipt</span><span class="w">PREREG_LONGONLY</span></div><div class="dlink"><code>#G-105</code><button data-g="G-105">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-106" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-106">G-106</a><span class="chev">&#9656;</span></td><td>2026-07-22</td><td>Stream batch 1: GILT-as-UST-substitute, vol term-structure/skew signals, OR15 debit verticals</td><td>no-signal</td><td>-</td><td>GILT kill (crisis-shape fails +0.48 down vs +0.76 up; hostile audit found daily-corr inflated by smoothing - kill stands); term/skew nothing at 0.8t; OR15 debit = strongest kill of the night</td><td>~12</td><td>PREREG_STREAM 1 + audit</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Stream batch 1: GILT-as-UST-substitute, vol term-structure/skew signals, OR15 debit verticals</p><div class="df"><span class="k">killed</span><span class="w">2026-07-22</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">GILT kill (crisis-shape fails +0.48 down vs +0.76 up; hostile audit found daily-corr inflated by smoothing - kill stands); term/skew nothing at 0.8t; OR15 debit = strongest kill of the night</span><span class="k">configs run</span><span class="w">~12</span><span class="k">receipt</span><span class="w">PREREG_STREAM 1 + audit</span></div><div class="dlink"><code>#G-106</code><button data-g="G-106">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-110" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-110">G-110</a><span class="chev">&#9656;</span></td><td>2026-07-1x</td><td>Participant-positioning follows (FII/Pro/Client index futures)</td><td>no-signal</td><td>-</td><td>Follow-FII the textbook trap: IS +1.35 to OOS -0.15; Pro OOS -0.9 to -1.4; the one IS+OOS survivor (fade retail) later cut as noise at senior audit</td><td>~15</td><td>POSITIONING_HUNT</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Participant-positioning follows (FII/Pro/Client index futures)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-1x</span><span class="k">class</span><span class="w">no-signal &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">Follow-FII the textbook trap: IS +1.35 to OOS -0.15; Pro OOS -0.9 to -1.4; the one IS+OOS survivor (fade retail) later cut as noise at senior audit</span><span class="k">configs run</span><span class="w">~15</span><span class="k">receipt</span><span class="w">POSITIONING_HUNT</span></div><div class="dlink"><code>#G-110</code><button data-g="G-110">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-112" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-112">G-112</a><span class="chev">&#9656;</span></td><td>2026-05-xx</td><td>Early forex H-series (H-EVENT-01-DRIFT, H-HTF-LTF-01 + siblings on the forex M1/M15 DB)</td><td>no-signal/infra</td><td>-</td><td>pre-swing-ledger era: the 4h drift survivor DIED after the -3h timezone-bug fix; the HTF-LTF v1 kill no longer holds as originally stated (data was mis-timestamped both ways). Era's honest lesson: half the "findings" were the clock. Receipts = memory-era notes + retained backup tables; provenance thinner than later rows, marked as such</td><td>~15</td><td>forex_ohlcv memory notes</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Early forex H-series (H-EVENT-01-DRIFT, H-HTF-LTF-01 + siblings on the forex M1/M15 DB)</p><div class="df"><span class="k">killed</span><span class="w">2026-05-xx</span><span class="k">class</span><span class="w">no-signal/infra &middot; the hypothesis produced nothing once artifacts and controls were applied</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">pre-swing-ledger era: the 4h drift survivor DIED after the -3h timezone-bug fix; the HTF-LTF v1 kill no longer holds as originally stated (data was mis-timestamped both ways). Era's honest lesson: half the "findings" were the clock. Receipts = memory-era notes + retained backup tables; provenance thinner than later rows, marked as such</span><span class="k">configs run</span><span class="w">~15</span><span class="k">receipt</span><span class="w">forex_ohlcv memory notes</span></div><div class="dlink"><code>#G-112</code><button data-g="G-112">copy link to this grave</button></div></div></div></div></td></tr>
+</table></div>
+</div>
+<div class="gv-sec" id="cls-infra-invalid">
+<div class="gv-class"><h3>Broken test</h3><span class="n">11</span><code class="gv-slug">infra-invalid</code></div>
+<p class="gv-def">the test itself was broken (look-ahead, stale marks, artifacts); refiled honestly, and several became public retractions</p>
+<div class="gv-tblwrap"><table class="gv">
+<tr><th>id</th><th>killed</th><th>hypothesis</th><th>class</th><th>preregistered bar</th><th>verdict, with numbers</th><th>configs</th><th>receipt</th></tr>
+<tr id="G-009" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-009">G-009</a><span class="chev">&#9656;</span></td><td>2026-07-30</td><td>Limit-fill generosity rescues zero-hero</td><td>infra-invalid to no-signal</td><td>any fill model positive</td><td>close-fill vs limit-fill BRACKET reality; all cells negative both</td><td>16</td><td>K6b</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Limit-fill generosity rescues zero-hero</p><div class="df"><span class="k">killed</span><span class="w">2026-07-30</span><span class="k">class</span><span class="w">infra-invalid to no-signal &middot; the test itself was broken (look-ahead, stale marks, artifacts); refiled honestly, and several became public retractions</span><span class="k">preregistered bar</span><span class="w">any fill model positive</span><span class="k">verdict</span><span class="w">close-fill vs limit-fill BRACKET reality; all cells negative both</span><span class="k">configs run</span><span class="w">16</span><span class="k">receipt</span><span class="w">K6b</span></div><div class="dlink"><code>#G-009</code><button data-g="G-009">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-014" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-014">G-014</a><span class="chev">&#9656;</span></td><td>2026-07-28</td><td>KJ failure via circuit-band censoring (my own mechanism claim)</td><td>infra-invalid</td><td>censored-Pareto moves the measure</td><td>RETRACTED publicly: censoring ~4% pooled, threshold geometry artifact</td><td>8</td><td>kj_audit2-4</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">KJ failure via circuit-band censoring (my own mechanism claim)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-28</span><span class="k">class</span><span class="w">infra-invalid &middot; the test itself was broken (look-ahead, stale marks, artifacts); refiled honestly, and several became public retractions</span><span class="k">preregistered bar</span><span class="w">censored-Pareto moves the measure</span><span class="k">verdict</span><span class="w">RETRACTED publicly: censoring ~4% pooled, threshold geometry artifact</span><span class="k">configs run</span><span class="w">8</span><span class="k">receipt</span><span class="w">kj_audit2-4</span></div><div class="dlink"><code>#G-014</code><button data-g="G-014">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-031" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-031">G-031</a><span class="chev">&#9656;</span></td><td>2026-06-xx</td><td>Balance-sheet leverage factor on free PIT window</td><td>infra-invalid</td><td>pre-2023 PIT exists</td><td>FY2023 XBRL cliff: free PIT B/S pre-2023 nonexistent to crash-trap factor</td><td>~4</td><td>balance_sheet_cliff</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Balance-sheet leverage factor on free PIT window</p><div class="df"><span class="k">killed</span><span class="w">2026-06-xx</span><span class="k">class</span><span class="w">infra-invalid &middot; the test itself was broken (look-ahead, stale marks, artifacts); refiled honestly, and several became public retractions</span><span class="k">preregistered bar</span><span class="w">pre-2023 PIT exists</span><span class="k">verdict</span><span class="w">FY2023 XBRL cliff: free PIT B/S pre-2023 nonexistent to crash-trap factor</span><span class="k">configs run</span><span class="w">~4</span><span class="k">receipt</span><span class="w">balance_sheet_cliff</span></div><div class="dlink"><code>#G-031</code><button data-g="G-031">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-050" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-050">G-050</a><span class="chev">&#9656;</span></td><td>2026-07-25</td><td>I2 overnight-gap fade intraday</td><td>infra-invalid</td><td>tradeable after 09:29</td><td>+30bps t12.5 raw to lives ENTIRELY open to 09:29 (untradeable); 09:29 entry -11.5bps. Open-window artifact</td><td>~6</td><td>same</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">I2 overnight-gap fade intraday</p><div class="df"><span class="k">killed</span><span class="w">2026-07-25</span><span class="k">class</span><span class="w">infra-invalid &middot; the test itself was broken (look-ahead, stale marks, artifacts); refiled honestly, and several became public retractions</span><span class="k">preregistered bar</span><span class="w">tradeable after 09:29</span><span class="k">verdict</span><span class="w">+30bps t12.5 raw to lives ENTIRELY open to 09:29 (untradeable); 09:29 entry -11.5bps. Open-window artifact</span><span class="k">configs run</span><span class="w">~6</span><span class="k">receipt</span><span class="w">same</span></div><div class="dlink"><code>#G-050</code><button data-g="G-050">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-052" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-052">G-052</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>**Dump-day intraday short (the retraction)** - vol≥3x + drop to short 09:45</td><td>infra-invalid</td><td>PIT-clean at entry</td><td>"+50bps t5.1 confirmed, corrA -0.19" to hostility audit: signal used FULL-DAY volume (unknowable at 09:45, caused by the outcome). PIT version -15bps t-3.0. RETRACTED with entire downstream: pro-forma Sharpe 1.74 to 2.1, 3-way 25.5% CAGR, leverage k to 3.3-3.5 ALL INVALID</td><td>~30</td><td>dump_* scripts; propagated 4 turns before caught</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">**Dump-day intraday short (the retraction)** - vol≥3x + drop to short 09:45</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">infra-invalid &middot; the test itself was broken (look-ahead, stale marks, artifacts); refiled honestly, and several became public retractions</span><span class="k">preregistered bar</span><span class="w">PIT-clean at entry</span><span class="k">verdict</span><span class="w">"+50bps t5.1 confirmed, corrA -0.19" to hostility audit: signal used FULL-DAY volume (unknowable at 09:45, caused by the outcome). PIT version -15bps t-3.0. RETRACTED with entire downstream: pro-forma Sharpe 1.74 to 2.1, 3-way 25.5% CAGR, leverage k to 3.3-3.5 ALL INVALID</span><span class="k">configs run</span><span class="w">~30</span><span class="k">receipt</span><span class="w">dump_* scripts; propagated 4 turns before caught</span></div><div class="autopsy">A +50bps/day short at t=5.1 that used the future: full-day volume inside a 09:45 signal. Point-in-time, it loses money. Retracted with its whole downstream.</div><div class="dlink"><code>#G-052</code><button data-g="G-052">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-053" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-053">G-053</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>Pump-long intraday (symmetric)</td><td>infra-invalid</td><td>PIT</td><td>claimed +64bps t7.4 to PIT -48bps t-11.9</td><td>~8</td><td>same audit</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Pump-long intraday (symmetric)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">infra-invalid &middot; the test itself was broken (look-ahead, stale marks, artifacts); refiled honestly, and several became public retractions</span><span class="k">preregistered bar</span><span class="w">PIT</span><span class="k">verdict</span><span class="w">claimed +64bps t7.4 to PIT -48bps t-11.9</span><span class="k">configs run</span><span class="w">~8</span><span class="k">receipt</span><span class="w">same audit</span></div><div class="dlink"><code>#G-053</code><button data-g="G-053">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-075" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-075">G-075</a><span class="chev">&#9656;</span></td><td>≤2026-07-26</td><td>Micro-artifact family: phantom-open E4 fills, cost-shifted-t E2, settle-vs-LTP ITM marks</td><td>infra-invalid</td><td>-</td><td>test-construction artifacts caught by entry/mark decomposition</td><td>~5</td><td>B1</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Micro-artifact family: phantom-open E4 fills, cost-shifted-t E2, settle-vs-LTP ITM marks</p><div class="df"><span class="k">killed</span><span class="w">≤2026-07-26</span><span class="k">class</span><span class="w">infra-invalid &middot; the test itself was broken (look-ahead, stale marks, artifacts); refiled honestly, and several became public retractions</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">test-construction artifacts caught by entry/mark decomposition</span><span class="k">configs run</span><span class="w">~5</span><span class="k">receipt</span><span class="w">B1</span></div><div class="dlink"><code>#G-075</code><button data-g="G-075">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-089" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-089">G-089</a><span class="chev">&#9656;</span></td><td>2026-07-0x</td><td>Residual momentum (our construction)</td><td>infra-invalid</td><td>OOS survives</td><td>killed; literature (Blitz-Huij-Martens) robust with a DIFFERENT recipe to bounded re-trial filed</td><td>~6</td><td>GRAVEYARD_LIBRARY D1</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Residual momentum (our construction)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-0x</span><span class="k">class</span><span class="w">infra-invalid &middot; the test itself was broken (look-ahead, stale marks, artifacts); refiled honestly, and several became public retractions</span><span class="k">preregistered bar</span><span class="w">OOS survives</span><span class="k">verdict</span><span class="w">killed; literature (Blitz-Huij-Martens) robust with a DIFFERENT recipe to bounded re-trial filed</span><span class="k">configs run</span><span class="w">~6</span><span class="k">receipt</span><span class="w">GRAVEYARD_LIBRARY D1</span></div><div class="dlink"><code>#G-089</code><button data-g="G-089">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-092" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-092">G-092</a><span class="chev">&#9656;</span></td><td>2026-07-24</td><td>F&amp;O ban-list entry/exit drift (E2)</td><td>infra-invalid</td><td>-</td><td>**RETRACTED**: scoping bar t-tested a COST-SHIFTED series (constant charge inflates |t| mechanically); raw t -1.5/-1.7 = ns. Spawned the standing rule: significance on RAW, profitability on NET, never t-test a deterministic constant</td><td>~8</td><td>BATCH5 E2 correction</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">F&amp;O ban-list entry/exit drift (E2)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-24</span><span class="k">class</span><span class="w">infra-invalid &middot; the test itself was broken (look-ahead, stale marks, artifacts); refiled honestly, and several became public retractions</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">**RETRACTED**: scoping bar t-tested a COST-SHIFTED series (constant charge inflates |t| mechanically); raw t -1.5/-1.7 = ns. Spawned the standing rule: significance on RAW, profitability on NET, never t-test a deterministic constant</span><span class="k">configs run</span><span class="w">~8</span><span class="k">receipt</span><span class="w">BATCH5 E2 correction</span></div><div class="dlink"><code>#G-092</code><button data-g="G-092">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-096" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-096">G-096</a><span class="chev">&#9656;</span></td><td>2026-07-23</td><td>Gold-ETF stale-NAV arbitrage (E4)</td><td>infra-invalid</td><td>-</td><td>killed AS artifact - the "dislocation" was the stale print itself</td><td>~4</td><td>E4</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Gold-ETF stale-NAV arbitrage (E4)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-23</span><span class="k">class</span><span class="w">infra-invalid &middot; the test itself was broken (look-ahead, stale marks, artifacts); refiled honestly, and several became public retractions</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">killed AS artifact - the "dislocation" was the stale print itself</span><span class="k">configs run</span><span class="w">~4</span><span class="k">receipt</span><span class="w">E4</span></div><div class="dlink"><code>#G-096</code><button data-g="G-096">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-100" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-100">G-100</a><span class="chev">&#9656;</span></td><td>2026-07-24</td><td>SIP-window calendar effect</td><td>infra-invalid</td><td>-</td><td>t=2.93 was ENTIRELY overlapping sessions 1-3 of month (pooling artifact)</td><td>~4</td><td>batch5</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">SIP-window calendar effect</p><div class="df"><span class="k">killed</span><span class="w">2026-07-24</span><span class="k">class</span><span class="w">infra-invalid &middot; the test itself was broken (look-ahead, stale marks, artifacts); refiled honestly, and several became public retractions</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">t=2.93 was ENTIRELY overlapping sessions 1-3 of month (pooling artifact)</span><span class="k">configs run</span><span class="w">~4</span><span class="k">receipt</span><span class="w">batch5</span></div><div class="dlink"><code>#G-100</code><button data-g="G-100">copy link to this grave</button></div></div></div></div></td></tr>
+</table></div>
+</div>
+<div class="gv-sec" id="cls-cost-wall">
+<div class="gv-class"><h3>Costs ate it</h3><span class="n">11</span><code class="gv-slug">cost-wall</code></div>
+<p class="gv-def">the edge is real gross and dead net of honest Indian costs</p>
+<div class="gv-tblwrap"><table class="gv">
+<tr><th>id</th><th>killed</th><th>hypothesis</th><th>class</th><th>preregistered bar</th><th>verdict, with numbers</th><th>configs</th><th>receipt</th></tr>
+<tr id="G-010" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-010">G-010</a><span class="chev">&#9656;</span></td><td>2026-07-29</td><td>Peer's MCX intraday trend+reversion (orthogonal overlay)</td><td>cost-wall</td><td>net &gt; 0 after measured costs</td><td>orthogonality real (-0.46) but 2bp gross vs 8bp cost; -59%/yr</td><td>~12</td><td>K1</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Peer's MCX intraday trend+reversion (orthogonal overlay)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-29</span><span class="k">class</span><span class="w">cost-wall &middot; the edge is real gross and dead net of honest Indian costs</span><span class="k">preregistered bar</span><span class="w">net &gt; 0 after measured costs</span><span class="k">verdict</span><span class="w">orthogonality real (-0.46) but 2bp gross vs 8bp cost; -59%/yr</span><span class="k">configs run</span><span class="w">~12</span><span class="k">receipt</span><span class="w">K1</span></div><div class="dlink"><code>#G-010</code><button data-g="G-010">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-022" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-022">G-022</a><span class="chev">&#9656;</span></td><td>2026-06-03</td><td>Fixed-param ORB (opening range breakout) India</td><td>cost-wall</td><td>net positive any config</td><td>all configs net-negative (infra validated, both look-ahead gates PASS)</td><td>~24</td><td>quant.intraday</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Fixed-param ORB (opening range breakout) India</p><div class="df"><span class="k">killed</span><span class="w">2026-06-03</span><span class="k">class</span><span class="w">cost-wall &middot; the edge is real gross and dead net of honest Indian costs</span><span class="k">preregistered bar</span><span class="w">net positive any config</span><span class="k">verdict</span><span class="w">all configs net-negative (infra validated, both look-ahead gates PASS)</span><span class="k">configs run</span><span class="w">~24</span><span class="k">receipt</span><span class="w">quant.intraday</span></div><div class="dlink"><code>#G-022</code><button data-g="G-022">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-024" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-024">G-024</a><span class="chev">&#9656;</span></td><td>2026-06-02</td><td>VRP harvest futures-hedged</td><td>cost-wall</td><td>net after STT &gt; 0</td><td>futures STT eats the edge entirely</td><td>4</td><td>VRP_FINDINGS</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">VRP harvest futures-hedged</p><div class="df"><span class="k">killed</span><span class="w">2026-06-02</span><span class="k">class</span><span class="w">cost-wall &middot; the edge is real gross and dead net of honest Indian costs</span><span class="k">preregistered bar</span><span class="w">net after STT &gt; 0</span><span class="k">verdict</span><span class="w">futures STT eats the edge entirely</span><span class="k">configs run</span><span class="w">4</span><span class="k">receipt</span><span class="w">VRP_FINDINGS</span></div><div class="dlink"><code>#G-024</code><button data-g="G-024">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-036" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-036">G-036</a><span class="chev">&#9656;</span></td><td>2026-07-2x</td><td>Insider-trades signal</td><td>cost-wall</td><td>Sharpe after costs ≥ book bar</td><td>t7.7 IC to Sharpe 0.31 tradable-universe</td><td>~6</td><td>KILL_AUDIT</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Insider-trades signal</p><div class="df"><span class="k">killed</span><span class="w">2026-07-2x</span><span class="k">class</span><span class="w">cost-wall &middot; the edge is real gross and dead net of honest Indian costs</span><span class="k">preregistered bar</span><span class="w">Sharpe after costs ≥ book bar</span><span class="k">verdict</span><span class="w">t7.7 IC to Sharpe 0.31 tradable-universe</span><span class="k">configs run</span><span class="w">~6</span><span class="k">receipt</span><span class="w">KILL_AUDIT</span></div><div class="dlink"><code>#G-036</code><button data-g="G-036">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-037" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-037">G-037</a><span class="chev">&#9656;</span></td><td>2026-07-2x</td><td>Reversal composite</td><td>cost-wall</td><td>net &gt; 0</td><td>t13 gross, dead on measured costs</td><td>~10</td><td>KILL_AUDIT</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Reversal composite</p><div class="df"><span class="k">killed</span><span class="w">2026-07-2x</span><span class="k">class</span><span class="w">cost-wall &middot; the edge is real gross and dead net of honest Indian costs</span><span class="k">preregistered bar</span><span class="w">net &gt; 0</span><span class="k">verdict</span><span class="w">t13 gross, dead on measured costs</span><span class="k">configs run</span><span class="w">~10</span><span class="k">receipt</span><span class="w">KILL_AUDIT</span></div><div class="dlink"><code>#G-037</code><button data-g="G-037">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-057" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-057">G-057</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>Intraday pairs (minute z-reversion, HDFCBANK/ICICI etc.)</td><td>cost-wall</td><td>net &gt; 0</td><td>gross +77-162%/decade real; 0.3bps/trip edge vs 40bps cost = ~-1000%/yr of cost drag on traded notional (the bankroll dies in ~5 weeks). Two orders of magnitude under</td><td>~8</td><td>final kills</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Intraday pairs (minute z-reversion, HDFCBANK/ICICI etc.)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">cost-wall &middot; the edge is real gross and dead net of honest Indian costs</span><span class="k">preregistered bar</span><span class="w">net &gt; 0</span><span class="k">verdict</span><span class="w">gross +77-162%/decade real; 0.3bps/trip edge vs 40bps cost = ~-1000%/yr of cost drag on traded notional (the bankroll dies in ~5 weeks). Two orders of magnitude under</span><span class="k">configs run</span><span class="w">~8</span><span class="k">receipt</span><span class="w">final kills</span></div><div class="dlink"><code>#G-057</code><button data-g="G-057">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-058" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-058">G-058</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>Systematic intraday reversal composite (15-feature PIT mine)</td><td>cost-wall</td><td>net &gt; 0 at any real venue</td><td>IC OOS +4.83% t13 GENUINELY REAL; net -62(mid)/-15(large)/-4bps(top-cap optimistic). Market efficient exactly to the cost frontier</td><td>~40</td><td>systematic mine</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Systematic intraday reversal composite (15-feature PIT mine)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">cost-wall &middot; the edge is real gross and dead net of honest Indian costs</span><span class="k">preregistered bar</span><span class="w">net &gt; 0 at any real venue</span><span class="k">verdict</span><span class="w">IC OOS +4.83% t13 GENUINELY REAL; net -62(mid)/-15(large)/-4bps(top-cap optimistic). Market efficient exactly to the cost frontier</span><span class="k">configs run</span><span class="w">~40</span><span class="k">receipt</span><span class="w">systematic mine</span></div><div class="autopsy">A 15-feature reversal composite with OOS IC at t=13, genuinely real, and net-negative at every venue that would fill it. The market is efficient exactly to the cost line.</div><div class="dlink"><code>#G-058</code><button data-g="G-058">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-059" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-059">G-059</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>Any sub-daily horizon harvest (5m to close full sweep)</td><td>cost-wall</td><td>net &gt; 0 any horizon</td><td>nothing clears at sub-10-day holds; what does clear lives at horizons the book already trades, so the sweep bought redundancy, not alpha</td><td>~60</td><td>horizon sweep, subdaily_fwd</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Any sub-daily horizon harvest (5m to close full sweep)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">cost-wall &middot; the edge is real gross and dead net of honest Indian costs</span><span class="k">preregistered bar</span><span class="w">net &gt; 0 any horizon</span><span class="k">verdict</span><span class="w">nothing clears at sub-10-day holds; what does clear lives at horizons the book already trades, so the sweep bought redundancy, not alpha</span><span class="k">configs run</span><span class="w">~60</span><span class="k">receipt</span><span class="w">horizon sweep, subdaily_fwd</span></div><div class="dlink"><code>#G-059</code><button data-g="G-059">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-076" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-076">G-076</a><span class="chev">&#9656;</span></td><td>≤2026-07-26</td><td>Cost-walled residue: ADR-gap, reversal_5, seasonal-mom (79% turnover), illiquid-tail P2 (dies @100bps), covered-call, long-vol/gamma (theta), OR15 debit verticals</td><td>cost-wall</td><td>-</td><td>real gross, dead at honest round-trips</td><td>~10</td><td>B2</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Cost-walled residue: ADR-gap, reversal_5, seasonal-mom (79% turnover), illiquid-tail P2 (dies @100bps), covered-call, long-vol/gamma (theta), OR15 debit verticals</p><div class="df"><span class="k">killed</span><span class="w">≤2026-07-26</span><span class="k">class</span><span class="w">cost-wall &middot; the edge is real gross and dead net of honest Indian costs</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">real gross, dead at honest round-trips</span><span class="k">configs run</span><span class="w">~10</span><span class="k">receipt</span><span class="w">B2</span></div><div class="dlink"><code>#G-076</code><button data-g="G-076">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-090" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-090">G-090</a><span class="chev">&#9656;</span></td><td>2026-07-0x</td><td>Short-term reversal 2-4wk</td><td>cost-wall</td><td>net &gt; 0</td><td>killed; literature's surviving version is DAILY residual (liquidity provision) - likely still cost-dead here</td><td>~6</td><td>GL D4</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Short-term reversal 2-4wk</p><div class="df"><span class="k">killed</span><span class="w">2026-07-0x</span><span class="k">class</span><span class="w">cost-wall &middot; the edge is real gross and dead net of honest Indian costs</span><span class="k">preregistered bar</span><span class="w">net &gt; 0</span><span class="k">verdict</span><span class="w">killed; literature's surviving version is DAILY residual (liquidity provision) - likely still cost-dead here</span><span class="k">configs run</span><span class="w">~6</span><span class="k">receipt</span><span class="w">GL D4</span></div><div class="dlink"><code>#G-090</code><button data-g="G-090">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-109" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-109">G-109</a><span class="chev">&#9656;</span></td><td>2026-07-20</td><td>PEAD/SUE illiquid-tail long</td><td>cost-wall</td><td>-</td><td>REPRODUCED-NOT-TRADEABLE: monotone, t=11.65, survives every confound (half is bid-ask bounce, residual real) - and dies on the cost realistic for that liquidity bucket</td><td>~10</td><td>PREREG_PEAD</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">PEAD/SUE illiquid-tail long</p><div class="df"><span class="k">killed</span><span class="w">2026-07-20</span><span class="k">class</span><span class="w">cost-wall &middot; the edge is real gross and dead net of honest Indian costs</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">REPRODUCED-NOT-TRADEABLE: monotone, t=11.65, survives every confound (half is bid-ask bounce, residual real) - and dies on the cost realistic for that liquidity bucket</span><span class="k">configs run</span><span class="w">~10</span><span class="k">receipt</span><span class="w">PREREG_PEAD</span></div><div class="dlink"><code>#G-109</code><button data-g="G-109">copy link to this grave</button></div></div></div></div></td></tr>
+</table></div>
+</div>
+<div class="gv-sec" id="cls-regime">
+<div class="gv-class"><h3>One era only</h3><span class="n">5</span><code class="gv-slug">regime</code></div>
+<p class="gv-def">worked in one era, sign flips or dies outside it; an era portrait, not a law</p>
+<div class="gv-tblwrap"><table class="gv">
+<tr><th>id</th><th>killed</th><th>hypothesis</th><th>class</th><th>preregistered bar</th><th>verdict, with numbers</th><th>configs</th><th>receipt</th></tr>
+<tr id="G-013" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-013">G-013</a><span class="chev">&#9656;</span></td><td>2026-07-28</td><td>Kelly-Jiang tail-risk state transfers to India</td><td>regime</td><td>paper's autocorr/vol-corr replicate</td><td>autocorr ~0 vs 0.9, COVID not top-tail, null all horizons; power verified 0.85 to 0.78</td><td>~20</td><td>kj_* 4-audit chain</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Kelly-Jiang tail-risk state transfers to India</p><div class="df"><span class="k">killed</span><span class="w">2026-07-28</span><span class="k">class</span><span class="w">regime &middot; worked in one era, sign flips or dies outside it; an era portrait, not a law</span><span class="k">preregistered bar</span><span class="w">paper's autocorr/vol-corr replicate</span><span class="k">verdict</span><span class="w">autocorr ~0 vs 0.9, COVID not top-tail, null all horizons; power verified 0.85 to 0.78</span><span class="k">configs run</span><span class="w">~20</span><span class="k">receipt</span><span class="w">kj_* 4-audit chain</span></div><div class="dlink"><code>#G-013</code><button data-g="G-013">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-030" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-030">G-030</a><span class="chev">&#9656;</span></td><td>2026-07-0x</td><td>Promoter-pledge as crisis signal</td><td>regime</td><td>fires in crisis windows</td><td>pledge data 2021+ crisis-blind; can't validate where it matters</td><td>~4</td><td>balance_sheet memory</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Promoter-pledge as crisis signal</p><div class="df"><span class="k">killed</span><span class="w">2026-07-0x</span><span class="k">class</span><span class="w">regime &middot; worked in one era, sign flips or dies outside it; an era portrait, not a law</span><span class="k">preregistered bar</span><span class="w">fires in crisis windows</span><span class="k">verdict</span><span class="w">pledge data 2021+ crisis-blind; can't validate where it matters</span><span class="k">configs run</span><span class="w">~4</span><span class="k">receipt</span><span class="w">balance_sheet memory</span></div><div class="dlink"><code>#G-030</code><button data-g="G-030">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-074" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-074">G-074</a><span class="chev">&#9656;</span></td><td>≤2026-07-26</td><td>Regime-mirage family: vol-term-structure timer, crash-cue-atlas cells, BAB-highvol</td><td>regime</td><td>-</td><td>looked like signals, were era-portraits</td><td>~10</td><td>B1 + PREREG_CRASH_CUE</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Regime-mirage family: vol-term-structure timer, crash-cue-atlas cells, BAB-highvol</p><div class="df"><span class="k">killed</span><span class="w">≤2026-07-26</span><span class="k">class</span><span class="w">regime &middot; worked in one era, sign flips or dies outside it; an era portrait, not a law</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">looked like signals, were era-portraits</span><span class="k">configs run</span><span class="w">~10</span><span class="k">receipt</span><span class="w">B1 + PREREG_CRASH_CUE</span></div><div class="dlink"><code>#G-074</code><button data-g="G-074">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-095" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-095">G-095</a><span class="chev">&#9656;</span></td><td>2026-07-23</td><td>Index-rebalance add/delete flow (B5-1)</td><td>regime</td><td>-</td><td>every cell FLIPS SIGN by era; post-2021 arbed away</td><td>~6</td><td>B5-1 + FORCED_FLOW</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Index-rebalance add/delete flow (B5-1)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-23</span><span class="k">class</span><span class="w">regime &middot; worked in one era, sign flips or dies outside it; an era portrait, not a law</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">every cell FLIPS SIGN by era; post-2021 arbed away</span><span class="k">configs run</span><span class="w">~6</span><span class="k">receipt</span><span class="w">B5-1 + FORCED_FLOW</span></div><div class="dlink"><code>#G-095</code><button data-g="G-095">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-107" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-107">G-107</a><span class="chev">&#9656;</span></td><td>2026-07-21</td><td>Crash-cue atlas (macro cues predict crashes) + regime-weighted overlay</td><td>regime</td><td>-</td><td>prediction fails on clean methodology (reactive, not predictive); overlay tilt FAILS vs incumbent; halves disagree</td><td>~20</td><td>PREREG_CRASH_CUE</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Crash-cue atlas (macro cues predict crashes) + regime-weighted overlay</p><div class="df"><span class="k">killed</span><span class="w">2026-07-21</span><span class="k">class</span><span class="w">regime &middot; worked in one era, sign flips or dies outside it; an era portrait, not a law</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">prediction fails on clean methodology (reactive, not predictive); overlay tilt FAILS vs incumbent; halves disagree</span><span class="k">configs run</span><span class="w">~20</span><span class="k">receipt</span><span class="w">PREREG_CRASH_CUE</span></div><div class="dlink"><code>#G-107</code><button data-g="G-107">copy link to this grave</button></div></div></div></div></td></tr>
+</table></div>
+</div>
+<div class="gv-sec" id="cls-handed-back">
+<div class="gv-class"><h3>Edge given back</h3><span class="n">6</span><code class="gv-slug">handed-back</code></div>
+<p class="gv-def">the premium or edge is real and the mechanism hands it back (direction risk, crash correlation, theta)</p>
+<div class="gv-tblwrap"><table class="gv">
+<tr><th>id</th><th>killed</th><th>hypothesis</th><th>class</th><th>preregistered bar</th><th>verdict, with numbers</th><th>configs</th><th>receipt</th></tr>
+<tr id="G-002" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-002">G-002</a><span class="chev">&#9656;</span></td><td>2026-07-30</td><td>Roll-tested-out adjustment as risk tool</td><td>handed-back</td><td>p5 +25% w/ mean cost ≤10%</td><td>tail -95 vs -203 but mean -32%; 2x costs to negative</td><td>256 cycles</td><td>K4</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Roll-tested-out adjustment as risk tool</p><div class="df"><span class="k">killed</span><span class="w">2026-07-30</span><span class="k">class</span><span class="w">handed-back &middot; the premium or edge is real and the mechanism hands it back (direction risk, crash correlation, theta)</span><span class="k">preregistered bar</span><span class="w">p5 +25% w/ mean cost ≤10%</span><span class="k">verdict</span><span class="w">tail -95 vs -203 but mean -32%; 2x costs to negative</span><span class="k">configs run</span><span class="w">256 cycles</span><span class="k">receipt</span><span class="w">K4</span></div><div class="dlink"><code>#G-002</code><button data-g="G-002">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-020" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-020">G-020</a><span class="chev">&#9656;</span></td><td>2026-06-20</td><td>Buyable window for naked long ATM weeklies (intraday)</td><td>handed-back</td><td>any entryxhold cell positive IS&amp;OOS</td><td>all 78 straddle cells negative; momentum 0 cells positive</td><td>78</td><td>nifty_pattern_scan</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Buyable window for naked long ATM weeklies (intraday)</p><div class="df"><span class="k">killed</span><span class="w">2026-06-20</span><span class="k">class</span><span class="w">handed-back &middot; the premium or edge is real and the mechanism hands it back (direction risk, crash correlation, theta)</span><span class="k">preregistered bar</span><span class="w">any entryxhold cell positive IS&amp;OOS</span><span class="k">verdict</span><span class="w">all 78 straddle cells negative; momentum 0 cells positive</span><span class="k">configs run</span><span class="w">78</span><span class="k">receipt</span><span class="w">nifty_pattern_scan</span></div><div class="autopsy">Every intraday entry-by-hold cell for buying NIFTY ATM premium: negative. All 78 of them.</div><div class="dlink"><code>#G-020</code><button data-g="G-020">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-023" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-023">G-023</a><span class="chev">&#9656;</span></td><td>2026-06-02</td><td>VRP harvest naked short strangle</td><td>handed-back</td><td>direction survivable</td><td>premium real (+1.59 vol pts t=4.75) but direction kills unhedged</td><td>6</td><td>VRP_FINDINGS</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">VRP harvest naked short strangle</p><div class="df"><span class="k">killed</span><span class="w">2026-06-02</span><span class="k">class</span><span class="w">handed-back &middot; the premium or edge is real and the mechanism hands it back (direction risk, crash correlation, theta)</span><span class="k">preregistered bar</span><span class="w">direction survivable</span><span class="k">verdict</span><span class="w">premium real (+1.59 vol pts t=4.75) but direction kills unhedged</span><span class="k">configs run</span><span class="w">6</span><span class="k">receipt</span><span class="w">VRP_FINDINGS</span></div><div class="dlink"><code>#G-023</code><button data-g="G-023">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-061" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-061">G-061</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>NIFTY weekly/0DTE short straddle (incl intraday sell 09:45 to 15:15)</td><td>handed-back</td><td>net &gt; 0 or a timer rescues</td><td>breakeven t1.2 win60% worst -2.1%; best conditioner t1.8 fails 6-way multiple testing. VRP fully priced net of cost at ATM</td><td>~20</td><td>weekly options mine</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">NIFTY weekly/0DTE short straddle (incl intraday sell 09:45 to 15:15)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">handed-back &middot; the premium or edge is real and the mechanism hands it back (direction risk, crash correlation, theta)</span><span class="k">preregistered bar</span><span class="w">net &gt; 0 or a timer rescues</span><span class="k">verdict</span><span class="w">breakeven t1.2 win60% worst -2.1%; best conditioner t1.8 fails 6-way multiple testing. VRP fully priced net of cost at ATM</span><span class="k">configs run</span><span class="w">~20</span><span class="k">receipt</span><span class="w">weekly options mine</span></div><div class="dlink"><code>#G-061</code><button data-g="G-061">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-069" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-069">G-069</a><span class="chev">&#9656;</span></td><td>2026-07-26</td><td>Single-stock OTM wing-selling as standalone sleeve</td><td>handed-back</td><td>survives a real crash</td><td>calm alpha REAL both sides (puts +8.2, calls +5.8%/yr, beta 0.13-0.19), then the COVID test: -24% notional in ONE month (-96% on margin) wipes ~3yr; predicted-by-strike-math -25%, hit -24.0. Spreads eat the edge; crash-correlated with the rest of the book, so it fails the diversification bar; in-book it was Sharpe-neutral with a worse tail</td><td>~64</td><td>grid + cov_crash_test + stop tests + combined_book_puts</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Single-stock OTM wing-selling as standalone sleeve</p><div class="df"><span class="k">killed</span><span class="w">2026-07-26</span><span class="k">class</span><span class="w">handed-back &middot; the premium or edge is real and the mechanism hands it back (direction risk, crash correlation, theta)</span><span class="k">preregistered bar</span><span class="w">survives a real crash</span><span class="k">verdict</span><span class="w">calm alpha REAL both sides (puts +8.2, calls +5.8%/yr, beta 0.13-0.19), then the COVID test: -24% notional in ONE month (-96% on margin) wipes ~3yr; predicted-by-strike-math -25%, hit -24.0. Spreads eat the edge; crash-correlated with the rest of the book, so it fails the diversification bar; in-book it was Sharpe-neutral with a worse tail</span><span class="k">configs run</span><span class="w">~64</span><span class="k">receipt</span><span class="w">grid + cov_crash_test + stop tests + combined_book_puts</span></div><div class="autopsy">Single-stock wing-selling: real calm-market alpha both sides, then one COVID month erases three years. Predicted -25%, realized -24%.</div><div class="dlink"><code>#G-069</code><button data-g="G-069">copy link to this grave</button></div></div></div></div></td></tr>
+<tr id="G-077" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-077">G-077</a><span class="chev">&#9656;</span></td><td>≤2026-07-26</td><td>Premium-handed-back family: iron-condor (proven 4 ways), ratio spreads, calendarized-VRP, tail-hedge-via-carry, index-hedge variants</td><td>handed-back</td><td>-</td><td>defined-risk hands the edge back; crash-correlated</td><td>~15</td><td>B5</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">Premium-handed-back family: iron-condor (proven 4 ways), ratio spreads, calendarized-VRP, tail-hedge-via-carry, index-hedge variants</p><div class="df"><span class="k">killed</span><span class="w">≤2026-07-26</span><span class="k">class</span><span class="w">handed-back &middot; the premium or edge is real and the mechanism hands it back (direction risk, crash correlation, theta)</span><span class="k">preregistered bar</span><span class="w">-</span><span class="k">verdict</span><span class="w">defined-risk hands the edge back; crash-correlated</span><span class="k">configs run</span><span class="w">~15</span><span class="k">receipt</span><span class="w">B5</span></div><div class="dlink"><code>#G-077</code><button data-g="G-077">copy link to this grave</button></div></div></div></div></td></tr>
+</table></div>
+</div>
+<div class="gv-sec" id="cls-structural-wall">
+<div class="gv-class"><h3>Market said no</h3><span class="n">1</span><code class="gv-slug">structural-wall</code></div>
+<p class="gv-def">unshortable, illegal, lot-size or capacity walls; the market says no</p>
+<div class="gv-tblwrap"><table class="gv">
+<tr><th>id</th><th>killed</th><th>hypothesis</th><th>class</th><th>preregistered bar</th><th>verdict, with numbers</th><th>configs</th><th>receipt</th></tr>
+<tr id="G-038" class="gv-row" tabindex="0" aria-expanded="false"><td><a href="#G-038">G-038</a><span class="chev">&#9656;</span></td><td>2026-07-02</td><td>USDINR carry/trend sleeve (retail)</td><td>structural-wall</td><td>legally tradable</td><td>RBI: retail USDINR non-hedging ILLEGAL; offshore-only</td><td>~6</td><td>pareto memory</td></tr>
+<tr class="gv-detail"><td colspan="8"><div class="dwrap"><div class="din"><div class="dcard"><p class="dh">USDINR carry/trend sleeve (retail)</p><div class="df"><span class="k">killed</span><span class="w">2026-07-02</span><span class="k">class</span><span class="w">structural-wall &middot; unshortable, illegal, lot-size or capacity walls; the market says no</span><span class="k">preregistered bar</span><span class="w">legally tradable</span><span class="k">verdict</span><span class="w">RBI: retail USDINR non-hedging ILLEGAL; offshore-only</span><span class="k">configs run</span><span class="w">~6</span><span class="k">receipt</span><span class="w">pareto memory</span></div><div class="dlink"><code>#G-038</code><button data-g="G-038">copy link to this grave</button></div></div></div></div></td></tr>
+</table></div>
+</div>
+</section>
+</div>
+<div class="wrap narrow">
+
+<section id="lessons">
+  <div class="kicker">V &middot; What the ledger says</div>
+  <h2>Read as a distribution, the causes of death are the finding.</h2>
+
+  <p><b>60% died as no-signal.</b> 51 of 85 published hypotheses
+  produced nothing once artifacts and controls were applied. That is the base rate this work
+  actually runs at, worth stating plainly because most published research implies the opposite
+  ratio.</p>
+
+  <p><b>13% died because my own test was broken.</b> 11 rows are
+  infra-invalid: look-ahead in the plumbing, stale marks, a statistic computed on a cost-shifted
+  series, a calendar artifact. That is the number I did not expect when I started counting, and it
+  is the strongest argument for keeping the ledger at all, because an error rate you cannot see is
+  an error rate you cannot reduce.</p>
+
+  <p><b>13% were real and unharvestable.</b> 11 rows are cost-wall: genuine
+  gross edge, dead net of honest costs. The most expensive kind of dead end, because they survive
+  every statistical check and fail only where money changes hands.</p>
+
+  <p>The rest divide into premium the mechanism hands back (6), era-dependence (5), and one structural wall where the market simply says no.</p>
+
+  <p><b>Recurring failure modes, in the order they have cost me most:</b> a field only knowable
+  after the decision timestamp; a universe screened today and run backwards; costs assumed rather
+  than measured; a statistic computed on a series that was already smoothed; and a result found by
+  search but reported as though it were found by hypothesis.</p>
+</section>
+
+<section id="strength">
+  <div class="kicker">VI &middot; Exploratory and confirmatory</div>
+  <h2>Not the same kind of evidence.</h2>
+  <p>Of the 85 published rows, 29 carry a stated numeric bar fixed before the
+  test ran. Those are confirmatory: the result either cleared a threshold set in advance or it did
+  not. The remaining 56 were exploratory, run to see what was there, with the verdict
+  recorded afterwards.</p>
+  <p>Exploratory work is legitimate and necessary, and it is how you find out which questions are
+  worth asking. It is not evidence at the same strength, and treating it as though it were is
+  precisely the error this ledger exists to document. The preregistered bar column is the marker:
+  where it holds a number, the test was confirmatory. Everything appended to the forward file from
+  launch onward is confirmatory by construction, because the bar is committed before the result
+  exists.</p>
+</section>
+
+<section id="limits">
+  <div class="kicker">VII &middot; Known limitations</div>
+  <h2>Three, stated because a reader would find them anyway.</h2>
+  <p><b>Rows record what was tested and how it died, not why I believed it would work.</b> The
+  rationale is the most useful field for someone learning to do this, and it is the one the
+  backlog lacks. Autopsies carry it and are being added over time.</p>
+  <p><b>The published set is not the complete set.</b> Rows sitting too close to live book
+  construction are withheld, counted and stated. More importantly, configurations discarded before
+  this ledger existed were never recorded at all, so the true denominator is higher than the number
+  shown and is not recoverable.</p>
+  <p><b>Configuration counts are deliberately conservative.</b> The census takes the first number
+  in each row's configs field, which undercounts compound entries. The recorded total is a floor
+  rather than an estimate.</p>
+</section>
+
+<section id="provenance">
+  <div class="kicker">VIII &middot; Provenance</div>
+  <h2>Timestamps, stated precisely.</h2>
+
+  <p>"Preregistered before results" is only as good as its clock, so here is exactly what the
+  clock shows and exactly where it stops short.</p>
+
+  <p>Every preregistration file in the research repo was committed as its own commit, before any
+  result was appended to it. There is no case where a bar and its verdict landed together. The
+  gaps, though, are minutes to hours rather than days, for the plain reason that most of these
+  tests take minutes to run: median twelve minutes between the bar going in and the file next
+  being touched. Anyone treating a twelve-minute gap as strong evidence of good faith should not,
+  and I would rather say so than let it be discovered.</p>
+
+  <p>What those short follow-up commits actually contain is the part that carries more weight than
+  the gap. They are protocol amendments that declare their own position relative to the output,
+  in the file, at the time. One reads "declared after Phase-1 output, before any rescoring."
+  Another opens with "epistemic status declared before results: this is a same-data follow-up on
+  a result already seen, so directional confirmation here is not independent evidence." Writing
+  down that your own next test will not count as independent evidence, before running it, is a
+  harder discipline than preregistration and it is the one I would point at.</p>
+
+  <p>The limitation is real: that repository is private, because the same files contain live book
+  construction, so you cannot check any of this directly. What exists externally are anchors for
+  the flagship rows: an <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7099378" rel="noopener">SSRN
+  working paper</a>, dated public posts, and a retraction trail published the same day the errors
+  were found. From launch onward the situation inverts: new preregistrations append to the public
+  forward file before their results exist, and that git history is a clock anyone can audit
+  without taking my word for anything.</p>
+
+  <p>Every major kill-family was also cross-checked against the academic literature: 16 families,
+  7 confirmed by independent published work, 5 scoped as dead-at-my-venue but alive elsewhere,
+  4 flagged for bounded re-trials, and zero cases of the literature contradicting a component that
+  survived.</p>
+
+  <p>12 hypotheses are alive in some form: deployed, paper-gated, or parked as candidates. Their
+  construction does not publish. The ledger is about the dead; the survivors are the book.</p>
+</section>
+
+<section id="method">
+  <div class="kicker">IX &middot; Run your own</div>
+  <h2>The method is free.</h2>
+  <p>Write the bar before the test. Count everything you run. Classify the deaths. Park with
+  named re-open conditions instead of deleting. Retract in public when the test itself was
+  wrong. The full method, with the table format to steal:
+  <a href="https://github.com/Finance-broski/graveyard" rel="noopener">github.com/Finance-broski/graveyard</a>.</p>
+  <p class="fine">Corrections welcome: measured disagreements are the good kind. Open an issue
+  with your numbers and method; rows change when the evidence does, and the git history keeps
+  every prior version. If you want this class of scrutiny on your own backtest:
+  <a href="start.html">Bias Check</a>, fixed price, written verdict.</p>
+</section>
+
+<section class="rite">
+  <div class="r-rule"></div>
+  <p class="rite-line">The ledger continues.</p>
+  <p class="rite-sub">New preregistrations append to <a href="https://github.com/Finance-broski/graveyard/blob/main/FORWARD.md" rel="noopener">the forward file</a> before their results exist.</p>
+</section>
+
+<footer style="padding:2.5rem 0 2.5rem">
+  <p class="fine">Ayan Jain ·
+    <a href="https://financebroski.substack.com" rel="me noopener">The Bias Ledger</a> ·
+    <a href="https://github.com/Finance-broski/backtest-bias" rel="noopener">backtest-bias</a> ·
+    <a href="https://www.reddit.com/user/Finance__broski" rel="me noopener">Reddit</a> ·
+    <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7099378" rel="noopener">SSRN paper</a> ·
+    <a href="start.html">Start a Check</a></p>
+</footer>
+</div>
+
+<button id="gv-top" aria-label="Back to top">Top ↑</button>
+<button id="gv-secbtn" aria-label="Jump to sections">Sections</button>
+
+<script>
+(function(){
+  var bar=document.getElementById("gv-progress"), top=document.getElementById("gv-top");
+  addEventListener("scroll",function(){
+    var h=document.documentElement, max=h.scrollHeight-innerHeight;
+    bar.style.width=(max>0?(100*scrollY/max):0)+"%";
+    top.classList.toggle("show",scrollY>900);
+    var sb=document.getElementById("gv-secbtn");
+    if(sb)sb.classList.toggle("show",scrollY>900);
+  },{passive:true});
+  top.addEventListener("click",function(){scrollTo({top:0,behavior:"smooth"})});
+  var sb=document.getElementById("gv-secbtn");
+  if(sb)sb.addEventListener("click",function(){document.getElementById("ledger").scrollIntoView({behavior:"smooth"})});
+
+  var rail=document.querySelectorAll(".rail a");
+  var targets=[].map.call(rail,function(a){return document.querySelector(a.getAttribute("href"))});
+  function spy(){
+    var y=scrollY+140, on=0;
+    for(var i=0;i<targets.length;i++){if(targets[i]&&targets[i].offsetTop<=y)on=i;}
+    rail.forEach(function(a,i){a.classList.toggle("on",i===on)});
+  }
+  addEventListener("scroll",spy,{passive:true}); spy();
+  rail.forEach(function(a){a.addEventListener("click",function(){
+    var qi=document.getElementById("gv-q");
+    if(qi&&qi.value){qi.value="";qi.dispatchEvent(new Event("input"));}
+  })});
+
+  var q=document.getElementById("gv-q"), count=document.getElementById("gv-count");
+  var tables=[].slice.call(document.querySelectorAll("table.gv"));
+  var rows=[].slice.call(document.querySelectorAll("tr.gv-row"));
+  rows.forEach(function(r){r.dataset.t=r.textContent.toLowerCase()});
+  function filter(){
+    var v=q.value.trim().toLowerCase(), shown=0;
+    rows.forEach(function(r){
+      var hit=!v||r.dataset.t.indexOf(v)>-1;
+      r.style.display=hit?"":"none"; if(hit)shown++;
+      var d=r.nextElementSibling;
+      if(d&&d.classList.contains("gv-detail"))d.style.display=hit?"":"none";
+    });
+    tables.forEach(function(t){
+      var any=[].slice.call(t.querySelectorAll("tr.gv-row")).some(function(r){return r.style.display!=="none"});
+      var sec=t.closest(".gv-sec"); if(sec)sec.style.display=any?"":"none";
+    });
+    count.textContent=shown+" of "+rows.length+" shown";
+  }
+  q.addEventListener("input",function(){
+    filter();
+    var v=q.value.trim();
+    history.replaceState(null,"",(v?"?q="+encodeURIComponent(v):location.pathname)+location.hash);
+  });
+  var q0=new URLSearchParams(location.search).get("q");
+  if(q0){q.value=q0;filter();}
+  document.addEventListener("keydown",function(e){
+    if(e.key==="/"&&document.activeElement!==q&&!/input|textarea/i.test(document.activeElement.tagName)){
+      e.preventDefault();q.focus();q.select();
+      if(q.getBoundingClientRect().top<60||q.getBoundingClientRect().top>innerHeight-80)q.scrollIntoView({block:"center"});
+    }
+  });
+  q.addEventListener("keydown",function(e){
+    if(e.key==="Escape"){q.value="";q.dispatchEvent(new Event("input"));q.blur();}
+  });
+
+  function setOpen(r,on){
+    var d=r.nextElementSibling; if(!d||!d.classList.contains("gv-detail"))return;
+    r.classList.toggle("open",on); d.classList.toggle("open",on);
+    r.setAttribute("aria-expanded",on?"true":"false");
+  }
+  rows.forEach(function(r){
+    r.addEventListener("click",function(e){
+      if(e.target.closest("a"))return;
+      setOpen(r,!r.classList.contains("open"));
+    });
+    r.addEventListener("keydown",function(e){
+      if(e.key==="Enter"||e.key===" "){e.preventDefault();setOpen(r,!r.classList.contains("open"));}
+    });
+  });
+  document.querySelectorAll(".dlink button").forEach(function(b){
+    b.addEventListener("click",function(){
+      var url=location.origin+location.pathname+"#"+b.dataset.g;
+      (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(
+        function(){b.textContent="copied";setTimeout(function(){b.textContent="copy link to this grave"},1400)},
+        function(){prompt("copy this link:",url)});
+    });
+  });
+  function openFromHash(){
+    var id=location.hash.slice(1);
+    if(!id)return;
+    var r=document.getElementById(id);
+    if(r&&r.classList.contains("gv-row"))setOpen(r,true);
+  }
+  addEventListener("hashchange",openFromHash); openFromHash();
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1/dist/lenis.min.js"></script>
+<script>
+(function(){
+  document.documentElement.classList.add("js");
+  var rm=matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+  /* smooth inertia, same guard as the main site */
+  if(!rm && !matchMedia("(max-width:640px)").matches && typeof Lenis!=="undefined"){
+    var lenis=new Lenis({lerp:0.09,wheelMultiplier:0.92,smoothWheel:true});
+    (function raf(t){lenis.raf(t);requestAnimationFrame(raf);})();
+  }
+
+  /* census count-up */
+  var cnts=document.querySelectorAll(".cnt");
+  if(rm){cnts.forEach(function(c){c.textContent=(+c.dataset.t).toLocaleString("en-US")});}
+  else{
+    /* counts start blank-ish and roll up slowly AFTER their line has arrived (2.1s),
+       decelerating into the final figure: the ledger counting itself, at reading pace */
+    cnts.forEach(function(c){c.textContent="0"});
+    var T=2400,t0=null;
+    function step(ts){
+      if(!t0)t0=ts;
+      var p=Math.min(1,(ts-t0)/T),e=1-Math.pow(1-p,4);
+      cnts.forEach(function(c){c.textContent=Math.round(e*(+c.dataset.t)).toLocaleString("en-US")});
+      if(p<1)requestAnimationFrame(step);
+    }
+    setTimeout(function(){requestAnimationFrame(step)},2300);
+  }
+
+  /* idwall: a few ids flicker like distant lamps */
+  if(!rm){
+    var ids=document.querySelectorAll(".idwall span");
+    for(var i=0;i<14&&ids.length;i++){
+      var el=ids[(i*9+3)%ids.length];
+      el.classList.add("fl");
+      el.style.setProperty("--fd",(5+(i%7))+"s");
+      el.style.setProperty("--fdel",(i*0.9)+"s");
+    }
+  }
+
+  /* scroll-reveal */
+  var sel="section .kicker,section h2,section .sub,.wrap.narrow section p,.retr,.six a,.gv-class,.gv-def,.gv-tblwrap,.chips,.gv-search,.pull,.rite";
+  var els=[].slice.call(document.querySelectorAll(sel));
+  els.forEach(function(el){el.classList.add("rv")});
+  if("IntersectionObserver" in window && !rm){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("on");io.unobserve(e.target);}});
+    },{rootMargin:"0px 0px -8% 0px"});
+    els.forEach(function(el){io.observe(el)});
+  }else{
+    els.forEach(function(el){el.classList.add("on")});
+  }
+})();
+</script>
+</body>
+</html>

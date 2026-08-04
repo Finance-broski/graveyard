@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+title: "The Graveyard: a public ledger of killed trading-research hypotheses"
+message: "If you cite a row, a class, or the census from this ledger, please cite the ledger."
+type: dataset
+authors:
+  - family-names: Jain
+    given-names: Ayan
+    website: "https://finance-broski.github.io/"
+repository-code: "https://github.com/Finance-broski/graveyard"
+url: "https://finance-broski.github.io/graveyard.html"
+abstract: >-
+  A forward-running public record of killed quantitative-research hypotheses on Indian and
+  global markets. Each entry states the hypothesis, the preregistered bar it had to clear, the
+  verdict with measured numbers, the number of configurations run, and a cause-of-death class:
+  no-signal, infra-invalid, cost-wall, regime, handed-back, structural-wall, capital-gated,
+  parked or resurrected. The ledger exists to publish the denominator that most research
+  reporting omits, and includes five public retractions of the author's own prior claims.
+  Rows too close to live book construction are withheld and counted rather than removed.
+keywords:
+  - negative results
+  - research transparency
+  - preregistration
+  - backtest overfitting
+  - survivorship bias
+  - quantitative finance
+  - replication
+license: CC-BY-4.0
+version: "1.0"
+date-released: "2026-08-05"
