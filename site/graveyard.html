@@ -168,6 +168,37 @@
   tr.gv-row:hover td:first-child{border-left-color:var(--accent)}
   .gv-detail .dcard{opacity:0;transform:translateY(-5px);transition:opacity .3s .08s ease,transform .3s .08s ease}
   tr.gv-detail.open .dcard{opacity:1;transform:none}
+  /* Phones do not get a sideways table: rows become stacked cards, every column visible,
+     nothing scrolls horizontally. Source order already reads as a card, so this is pure
+     CSS and the filter/expand JS is untouched. */
+  @media(max-width:720px){
+    .gv-tblwrap{overflow-x:visible;border:0;background:transparent;border-radius:0}
+    table.gv{display:block;min-width:0;width:100%}   /* base sets min-width:980px for the
+                                                        desktop scroll pattern */
+    table.gv tbody{display:block}
+    table.gv tr:first-child{display:none}                /* the header row */
+    tr.gv-row{display:block;background:var(--panel);border:1px solid var(--line);
+      border-radius:10px;padding:12px 14px;margin:0 0 10px}
+    tr.gv-row td{display:block;border:0;padding:0}
+    tr.gv-row td:nth-child(1){display:inline-block;font-size:.72rem}
+    tr.gv-row td:nth-child(2){display:inline-block;color:var(--faint);
+      font:500 .72rem/1 var(--mono);margin-left:.5rem}
+    tr.gv-row td:nth-child(3){color:var(--fg);font-weight:600;font-size:.92rem;
+      line-height:1.45;margin:.45rem 0 .3rem}
+    tr.gv-row td:nth-child(4){display:inline-block;color:var(--faint);
+      font:500 .68rem/1 var(--mono);letter-spacing:.04em;margin-bottom:.45rem}
+    tr.gv-row td:nth-child(5){font-size:.78rem;color:var(--muted);margin:0 0 .35rem}
+    tr.gv-row td:nth-child(5)::before{content:"bar: ";color:var(--faint)}
+    tr.gv-row td:nth-child(6){font-size:.85rem;line-height:1.55;margin:0 0 .5rem}
+    tr.gv-row td:nth-child(7),tr.gv-row td:nth-child(8){display:inline;
+      font:500 .7rem/1 var(--mono);color:var(--faint)}
+    tr.gv-row td:nth-child(7)::before{content:"configs "}
+    tr.gv-row td:nth-child(8)::before{content:" \00b7  receipt "}
+    tr.gv-detail{display:block}
+    tr.gv-detail>td{display:block}
+    tr.gv-detail.open>td{border-bottom:0}
+    tr.gv-detail .dcard{border-radius:10px;margin:-6px 0 12px}
+  }
   .rite{text-align:center;padding:5rem 0 1rem}
   .rite .r-rule{width:42px;height:1px;background:var(--accent);opacity:.55;margin:0 auto 1.6rem}
   .rite-line{font-family:var(--serif);font-size:1.6rem;color:var(--fg);margin:0 0 .5rem}
