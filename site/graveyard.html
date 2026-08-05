@@ -128,6 +128,9 @@
     color:var(--muted);max-width:600px;margin:0 auto 2rem}
   .statline{font:600 .88rem/1.9 var(--mono);letter-spacing:.05em;color:var(--fg);margin:0 0 .7rem}
   .statline b{color:var(--accent);font-weight:600;font-size:1.02rem}
+  /* each unit carries its trailing separator and never breaks internally, so a wrapped
+     line ends with the dot instead of starting with an orphaned one */
+  .statline .st{white-space:nowrap}
   /* five stats are wide; shrink rather than orphan a label onto its own line */
   @media(max-width:980px){.statline{font-size:.78rem;letter-spacing:.03em}}
   @media(max-width:680px){.statline{font-size:.70rem;letter-spacing:.02em}}
@@ -243,8 +246,7 @@
     <h1>The Graveyard<em>.</em></h1>
     <p class="gy-lede">"The graveyard is the most informative dataset I own,
     and almost nobody keeps one."</p>
-    <p class="statline"><b class="cnt" data-t="155">155</b> STRATEGIES &nbsp;&middot;&nbsp; <b class="cnt" data-t="112">112</b> ENTRIES &nbsp;&middot;&nbsp; <b class="cnt" data-t="2123">2,123</b> CONFIGS
-    &nbsp;&middot;&nbsp; <b class="cnt" data-t="12">12</b> SURVIVED &nbsp;&middot;&nbsp; <b class="cnt" data-t="5">5</b> RETRACTIONS</p>
+    <p class="statline"><span class="st"><b class="cnt" data-t="155">155</b> STRATEGIES &middot;</span> <span class="st"><b class="cnt" data-t="112">112</b> ENTRIES &middot;</span> <span class="st"><b class="cnt" data-t="2123">2,123</b> CONFIGS &middot;</span> <span class="st"><b class="cnt" data-t="12">12</b> SURVIVED &middot;</span> <span class="st"><b class="cnt" data-t="5">5</b> RETRACTIONS</span></p>
     <p class="statnote">More strategies than entries, because fourteen entries are families:
     one row can hold eleven separate ideas. The ledger reported 112 until the bundles were
     expanded by hand. And the true configuration count is higher still, because before this
