@@ -198,6 +198,17 @@
     tr.gv-detail>td{display:block}
     tr.gv-detail.open>td{border-bottom:0}
     tr.gv-detail .dcard{border-radius:10px;margin:-6px 0 12px}
+    /* II and III become swipeable sliders instead of a long vertical wall. Scroll-snap,
+       no JS; the next card peeks in from the right as the affordance. */
+    .six{display:flex;grid-template-columns:none;overflow-x:auto;gap:10px;
+      scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+      padding:2px 2px 10px}
+    .six::-webkit-scrollbar{display:none}
+    .six a{flex:0 0 84%;scroll-snap-align:center}
+    .retrs{display:flex;overflow-x:auto;gap:10px;scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 2px 10px}
+    .retrs::-webkit-scrollbar{display:none}
+    .retrs .retr{flex:0 0 88%;scroll-snap-align:center;margin:0}
   }
   .rite{text-align:center;padding:5rem 0 1rem}
   .rite .r-rule{width:42px;height:1px;background:var(--accent);opacity:.55;margin:0 auto 1.6rem}
@@ -324,6 +335,7 @@
   <div class="kicker">III &middot; The credibility core</div>
   <h2>Five times the test itself was wrong, and I said so in public.</h2>
   <p class="sub">Kills prove discipline. Retractions prove the discipline points at me too.</p>
+  <div class="retrs">
   <div class="retr"><span class="tag">G-052 · RETRACTED 2026-07-26</span>
     <b>The dump-day short</b>
     <p>A +50bps/day intraday short printed t=5.1 and survived a first audit. It used full-day
@@ -351,7 +363,9 @@
     <p>I proposed a new structural improvement that was already live in the book's canonical
     configuration, and retracted the pro-forma. Read the live config before proposing
     structure.</p></div>
+    </div>
   <div class="pull">If you have never retracted anything,<br>you have not looked hard enough at your own work.</div>
+
 </section>
 
 </div>
