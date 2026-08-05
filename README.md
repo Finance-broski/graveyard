@@ -27,7 +27,7 @@ This repo is the table.
 
 I run a systematic book on Indian markets and a research process that kills most of what it
 touches. The kills are not the waste product of that process. They are most of what the
-process knows. A strategy that survived 155 funerals means something different from a
+process knows. A strategy that survived 143 funerals means something different from a
 strategy that survived none.
 
 ## How to read it
