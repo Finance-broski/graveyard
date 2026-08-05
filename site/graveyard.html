@@ -46,11 +46,15 @@
   .chips a b{color:var(--accent);font-weight:600}
   .gv-search{display:flex;align-items:center;gap:.8rem;margin:0 0 1.6rem;flex-wrap:wrap}
   .gv-search input{flex:1;min-width:240px;background:var(--panel);border:1px solid var(--line);
-    border-radius:8px;padding:11px 14px;color:var(--fg);font:400 .95rem var(--sans);outline:none}
+    border-radius:8px;padding:11px 14px;color:var(--fg);font:400 1rem var(--sans);outline:none}
   .gv-search input:focus{border-color:var(--accent)}
   .gv-skip{position:absolute;left:-9999px;top:0;z-index:300;background:var(--accent);
     color:var(--accent-ink);padding:12px 18px;font:700 .8rem/1 var(--sans)}
   .gv-skip:focus{left:10px;top:10px}
+  /* touch hygiene: no grey tap flash, no double-tap-zoom delay on interactives, and the
+     page keeps native pull-to-refresh while sliders contain their own edge overscroll */
+  a,button,tr.gv-row,.chips a,.six a{-webkit-tap-highlight-color:transparent;
+    touch-action:manipulation}
   .gv-search input::placeholder{color:var(--faint)}
   #gv-count{font:600 .72rem/1 var(--mono);color:var(--faint);white-space:nowrap}
   #gv-top{position:fixed;right:22px;bottom:22px;z-index:30;background:var(--panel);
@@ -78,7 +82,7 @@
   table.gv td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--fg)}
   table.gv tr:last-child td{border-bottom:0}
   table.gv tr:target td{background:var(--accent-soft)}
-  tr.gv-row{cursor:pointer}
+  tr.gv-row{cursor:pointer;scroll-margin-top:74px}
   tr.gv-row:hover td{background:rgba(255,255,255,.025)}
   .chev{margin-left:7px;color:var(--faint);display:inline-block;transition:transform .2s,color .2s;font-size:.68rem}
   tr.gv-row.open .chev{transform:rotate(90deg);color:var(--accent)}
@@ -209,6 +213,21 @@
       -webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 2px 10px}
     .retrs::-webkit-scrollbar{display:none}
     .retrs .retr{flex:0 0 88%;scroll-snap-align:center;margin:0}
+    .six,.retrs,.gv-tblwrap{overscroll-behavior-x:contain}
+    /* thumb targets: chips and the floating buttons were ~31-34px tall */
+    .chips a{padding:15px 17px}
+    #gv-top,#gv-secbtn{padding:13px 16px;bottom:max(18px,env(safe-area-inset-bottom))}
+    /* touch has no hover: reset the states that would stick after a tap, and give an
+       immediate pressed state instead */
+    tr.gv-row:hover{background:inherit}
+    .chips a:hover,.six a:hover{border-color:var(--line);color:var(--muted)}
+    #gv-top:hover,#gv-secbtn:hover{color:var(--muted);border-color:var(--line)}
+    .chips a:active,.six a:active,.retr:active,tr.gv-row:active{border-color:var(--accent)}
+    .cta:active,.go:active,#gv-top:active,#gv-secbtn:active{transform:scale(.97)}
+    /* 85 rows plus 85 hidden detail cards: skip rendering offscreen sections until
+       they approach. Hash jumps to #G-xxx still force-render in modern engines. */
+    .gv-sec{content-visibility:auto;contain-intrinsic-size:auto 900px}
+    html{scroll-behavior:auto}
   }
   .rite{text-align:center;padding:5rem 0 1rem}
   .rite .r-rule{width:42px;height:1px;background:var(--accent);opacity:.55;margin:0 auto 1.6rem}
@@ -750,9 +769,9 @@
     var sb=document.getElementById("gv-secbtn");
     if(sb)sb.classList.toggle("show",scrollY>900);
   },{passive:true});
-  top.addEventListener("click",function(){scrollTo({top:0,behavior:"smooth"})});
+  top.addEventListener("click",function(){scrollTo({top:0})});
   var sb=document.getElementById("gv-secbtn");
-  if(sb)sb.addEventListener("click",function(){document.getElementById("ledger").scrollIntoView({behavior:"smooth"})});
+  if(sb)sb.addEventListener("click",function(){document.getElementById("ledger").scrollIntoView()});
 
   var rail=document.querySelectorAll(".rail a");
   var targets=[].map.call(rail,function(a){return document.querySelector(a.getAttribute("href"))});
@@ -830,7 +849,14 @@
     var id=location.hash.slice(1);
     if(!id)return;
     var r=document.getElementById(id);
-    if(r&&r.classList.contains("gv-row"))setOpen(r,true);
+    if(r&&r.classList.contains("gv-row")){
+      setOpen(r,true);
+      /* content-visibility sections above render lazily and shift layout after the
+         browser's native anchor jump, so assert the scroll ourselves and re-assert
+         after the sections above have taken their real heights */
+      var go=function(){r.scrollIntoView({block:"start",behavior:"instant"})};
+      go(); setTimeout(go,300); setTimeout(go,900);
+    }
   }
   addEventListener("hashchange",openFromHash); openFromHash();
 })();
