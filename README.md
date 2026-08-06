@@ -51,6 +51,28 @@ A set of rows is withheld pending leak review (they sit too close to the live bo
 are counted, never hidden: the ledger states exactly how many rows you are not seeing.
 Withheld rows publish in redacted form as review completes, and several already have.
 
+## How the counting works
+
+Three different units appear in this ledger, and conflating them is how denominators get
+fudged, so here is the arithmetic in one place.
+
+A **strategy** is one falsifiable idea: a signal, a construction, a claim that could have
+been deployed on its own. A **configuration** is one parameterization of a strategy that
+actually ran. An **entry** is one ledger row, and some rows are families in which several
+related strategies died together, which is why 112 entries hold 155
+strategies.
+
+The reconciliation, so nobody has to reverse-engineer it: 155 strategies tested,
+12 survived in some form, which makes 143 funerals; the survivors do not
+get rows, because the ledger is the dead. Of the 112 entries, 85 publish in
+full or redacted form, 24 are withheld pending leak review (counted and stated
+above), and 3 are business rather than trading kills and are excluded as
+off-topic. The 2,123 configurations are summed over every entry including withheld
+ones, and the count is a floor for the reasons given under limitations.
+
+Census percentages are computed over the 85 published rows only, because those are
+the rows you can check.
+
 ## The retractions
 
 The credibility core of this ledger is not the kills. It is the five times the test itself
