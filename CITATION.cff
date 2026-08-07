@@ -12,6 +12,9 @@ identifiers:
     value: 10.5281/zenodo.21803488
     description: "Concept DOI, resolves to the latest version"
   - type: doi
+    value: 10.5281/zenodo.21835487
+    description: "Version DOI for v1.1"
+  - type: doi
     value: 10.5281/zenodo.21803489
     description: "Version DOI for v1.0"
 repository-code: "https://github.com/Finance-broski/graveyard"
@@ -33,5 +36,5 @@ keywords:
   - quantitative finance
   - replication
 license: CC-BY-4.0
-version: "1.0"
+version: "1.1"
 date-released: "2026-08-05"

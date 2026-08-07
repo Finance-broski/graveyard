@@ -208,11 +208,11 @@ wrong.
 If you cite a row, a class, or the census, cite the ledger:
 
 > Jain, A. (2026). *The Graveyard: a public ledger of killed trading-research hypotheses*
-> (version 1.0) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21803488
+> (version 1.1) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21803488
 
 The DOI above always resolves to the latest version; each release also carries its own
-version DOI (v1.0 is 10.5281/zenodo.21803489), so a citation can pin the exact state it
-read. Every release is archived independently of GitHub.
+version DOI (v1.1 is 10.5281/zenodo.21835487, v1.0 is 10.5281/zenodo.21803489), so a
+citation can pin the exact state it read. Every release is archived independently of GitHub.
 
 `CITATION.cff` is in the repo, so GitHub's "Cite this repository" button produces BibTeX and APA
 directly. Rows are versioned: the git history preserves every prior state, so a citation to a row
