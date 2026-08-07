@@ -54,12 +54,12 @@ circuit-band censoring of the return distribution.
 was retracted and replaced. Being right that something fails does not license being wrong
 about why.
 
-**The impact.** Public correction on the post that carried the wrong mechanism. The row now
-records both the dead strategy and the dead explanation.
+**The impact.** Corrected in public. The row now records both the dead strategy and the
+dead explanation.
 
 ## R4. The cost-shifted t-stat (G-092)
 
-**The claim.** A return series presented as statistically significant.
+**The claim.** A return series held as statistically significant at the scoping stage.
 
 **The bug.** The t-test was run on a series that already had a constant cost subtracted.
 Subtracting a deterministic constant shifts the mean while leaving the variance untouched,
@@ -68,8 +68,8 @@ which inflates |t| mechanically. The raw series was insignificant.
 **The correction.** Standing rule, now applied ledger-wide: **significance is tested on raw
 returns, profitability on net returns, and a deterministic constant is never t-tested.**
 
-**The impact.** The row was refiled with the raw-series verdict. The rule it minted has
-caught the same error twice since.
+**The impact.** The row was refiled with the raw-series verdict, and the rule it minted is
+applied ledger-wide.
 
 ## R5. The double-counted lever (G-103)
 
