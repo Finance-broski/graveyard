@@ -6,8 +6,8 @@ They get their own file because they are the credibility core of everything else
 ledger that only ever says "the market said no" is easy. This file is the expensive part.
 
 A retraction here means: the claim was published or relied upon, the flaw was in my test
-rather than in the market, and the correction names the mechanism. Strategies that simply
-died stay in [LEDGER.md](LEDGER.md). Tests that lied get listed below.
+rather than in the market, and the correction names the mechanism. Each of these also has
+its row in [LEDGER.md](LEDGER.md); this file is the fuller writeup.
 
 ---
 
@@ -35,7 +35,7 @@ which is the honest speed of this class of mistake. A first audit had already pa
 
 **The bug.** The same full-day-volume look-ahead, opposite sign.
 
-**The correction.** Point-in-time: **−48bps/day at t=−11.9**. The pair is a matched
+**The correction.** Point-in-time: **-48bps/day at t=-11.9**. The pair is a matched
 demonstration that one plumbing bug can manufacture two "independent" strategies with
 five-plus-sigma t-stats in opposite directions.
 
