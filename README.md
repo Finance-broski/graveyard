@@ -81,9 +81,8 @@ was wrong and I said so in public:
 1. **The dump-day short (G-052).** A +50bps/day intraday short printed t=5.1 and survived a
    first audit. It used full-day volume in a 09:45 entry signal: the volume was caused by
    the outcome it predicted. The point-in-time version loses 15bps/day. Retracted with its
-   entire downstream: pro-forma Sharpes, a 25.5% CAGR three-way book, and a leverage plan,
-   all invalid. It propagated four working sessions before I caught it. That is the honest
-   speed of these errors.
+   entire downstream, all invalid. It propagated four working sessions before I caught it.
+   That is the honest speed of these errors.
 2. **The pump-long twin (G-053).** Same look-ahead, opposite sign: claimed +64bps t=7.4,
    point-in-time reality -48bps t=-11.9.
 3. **The Kelly-Jiang mechanism claim (G-014).** My published explanation for why a paper
