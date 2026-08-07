@@ -76,7 +76,9 @@ the rows you can check.
 ## The retractions
 
 The credibility core of this ledger is not the kills. It is the five times the test itself
-was wrong and I said so in public:
+was wrong and I said so in public. Each one is written up in claim, bug, correction, impact
+form in [RETRACTIONS.md](RETRACTIONS.md), and the flagship carries a full case study in
+[autopsies/G-052.md](autopsies/G-052.md). The short version:
 
 1. **The dump-day short (G-052).** A +50bps/day intraday short printed t=5.1 and survived a
    first audit. It used full-day volume in a 09:45 entry signal: the volume was caused by
