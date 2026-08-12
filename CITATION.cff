@@ -5,7 +5,7 @@ type: dataset
 authors:
   - family-names: Jain
     given-names: Ayan
-    website: "https://finance-broski.github.io/"
+    website: "https://financebroski.com/"
 doi: 10.5281/zenodo.21803488
 identifiers:
   - type: doi
@@ -18,7 +18,7 @@ identifiers:
     value: 10.5281/zenodo.21803489
     description: "Version DOI for v1.0"
 repository-code: "https://github.com/Finance-broski/graveyard"
-url: "https://finance-broski.github.io/graveyard.html"
+url: "https://financebroski.com/graveyard.html"
 abstract: >-
   A forward-running public record of killed quantitative-research hypotheses on Indian and
   global markets. Each entry states the hypothesis, the preregistered bar it had to clear, the
