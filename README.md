@@ -230,3 +230,6 @@ every prior version.
 and build [backtest-bias](https://github.com/Finance-broski/backtest-bias)
 (`pip install backtest-bias`). If you want this class of scrutiny on your own backtest:
 [Bias Check](https://forms.gle/sAvosfHnitCBm9FD7), fixed fee, written verdict.*
+
+---
+The auditor behind this ledger: [financebroski.com](https://financebroski.com)
