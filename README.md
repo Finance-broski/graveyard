@@ -8,13 +8,13 @@ This is a public, forward-running ledger of my dead trading research. Every hypo
 kill gets a row: what I believed, what would have counted as success, what the data said,
 and how many configurations died finding out.
 
-**155 distinct strategies tested, across 112 ledger entries, over 2,123
+**158 distinct strategies tested, across 115 ledger entries, over 2,145
 configurations. 12 survived. Five public retractions. Provenance graded honestly, row by row.**
 
 There are more strategies than entries because fourteen entries are families: one row can
-hold eleven separate ideas. This ledger said 112 until those bundles were expanded by hand,
+hold eleven separate ideas. This ledger said 115 until those bundles were expanded by hand,
 which meant an artifact about publishing your denominator was under-reporting its own by a
-third. And 2,123 is still a floor, because before this ledger existed the discarded variants
+third. And 2,145 is still a floor, because before this ledger existed the discarded variants
 were never counted at all. Both corrections are the thesis applied to itself.
 
 ## Why publish failures
@@ -27,7 +27,7 @@ This repo is the table.
 
 I run a systematic book on Indian markets and a research process that kills most of what it
 touches. The kills are not the waste product of that process. They are most of what the
-process knows. A strategy that survived 143 funerals means something different from a
+process knows. A strategy that survived 146 funerals means something different from a
 strategy that survived none.
 
 ## How to read it
@@ -59,15 +59,15 @@ fudged, so here is the arithmetic in one place.
 A **strategy** is one falsifiable idea: a signal, a construction, a claim that could have
 been deployed on its own. A **configuration** is one parameterization of a strategy that
 actually ran. An **entry** is one ledger row, and some rows are families in which several
-related strategies died together, which is why 112 entries hold 155
+related strategies died together, which is why 115 entries hold 158
 strategies.
 
-The reconciliation, so nobody has to reverse-engineer it: 155 strategies tested,
-12 survived in some form, which makes 143 funerals; the survivors do not
-get rows, because the ledger is the dead. Of the 112 entries, 85 publish in
+The reconciliation, so nobody has to reverse-engineer it: 158 strategies tested,
+12 survived in some form, which makes 146 funerals; the survivors do not
+get rows, because the ledger is the dead. Of the 115 entries, 88 publish in
 full or redacted form, 24 are withheld pending leak review (counted and stated
 above), and 3 are business rather than trading kills and are excluded as
-off-topic. The 2,123 configurations are summed over every entry including withheld
+off-topic. The 2,145 configurations are summed over every entry including withheld
 ones, and the count is a floor for the reasons given under limitations.
 
 Census percentages are computed over the 85 published rows only, because those are

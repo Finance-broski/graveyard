@@ -11,7 +11,7 @@ higher and, before this ledger existed, uncountable. That admission is the artif
 thesis applied to itself.
 
 
-## Nothing there (51)
+## Nothing there (52)
 *`no-signal` — the hypothesis produced nothing once artifacts and controls were applied*
 
 | id | killed | hypothesis | class | preregistered bar | verdict, with numbers | configs | receipt |
@@ -67,8 +67,9 @@ thesis applied to itself.
 | G-106 | 2026-07-22 | Stream batch 1: GILT-as-UST-substitute, vol term-structure/skew signals, OR15 debit verticals | no-signal | - | GILT kill (crisis-shape fails +0.48 down vs +0.76 up; hostile audit found daily-corr inflated by smoothing - kill stands); term/skew nothing at 0.8t; OR15 debit = strongest kill of the night | ~12 | PREREG_STREAM 1 + audit |
 | G-110 | 2026-07-1x | Participant-positioning follows (FII/Pro/Client index futures) | no-signal | - | Follow-FII the textbook trap: IS +1.35 to OOS -0.15; Pro OOS -0.9 to -1.4; the one IS+OOS survivor (fade retail) later cut as noise at senior audit | ~15 | POSITIONING_HUNT |
 | G-112 | 2026-05-xx | Early forex H-series (H-EVENT-01-DRIFT, H-HTF-LTF-01 + siblings on the forex M1/M15 DB) | no-signal/infra | - | pre-swing-ledger era: the 4h drift survivor DIED after the -3h timezone-bug fix; the HTF-LTF v1 kill no longer holds as originally stated (data was mis-timestamped both ways). Era's honest lesson: half the "findings" were the clock. Receipts = memory-era notes + retained backup tables; provenance thinner than later rows, marked as such | ~15 | forex_ohlcv memory notes |
+| G-115 | 2026-08-24 | The pair screener's acceptance rule ranks the year ahead | no-signal | accepted pairs beat correlation-matched rejected ones out of sample | +5.5 points a year with acceptance taken from the stored run, which knows the future; -2.1 (+/-1.3) once acceptance is recomputed inside each test year, so nothing could know. The difference was hindsight. Accepted pairs do not beat correlation-matched rejected controls and no sortable column ranks the year ahead. Published on the product's own front page and in its launch post rather than buried | 12 | pairdesk self-test |
 
-## Broken test (11)
+## Broken test (12)
 *`infra-invalid` — the test itself was broken (look-ahead, stale marks, artifacts); refiled honestly, and several became public retractions*
 
 | id | killed | hypothesis | class | preregistered bar | verdict, with numbers | configs | receipt |
@@ -84,6 +85,7 @@ thesis applied to itself.
 | G-092 | 2026-07-24 | F&O ban-list entry/exit drift (E2) | infra-invalid | - | **RETRACTED**: scoping bar t-tested a COST-SHIFTED series (constant charge inflates \|t\| mechanically); raw t -1.5/-1.7 = ns. Spawned the standing rule: significance on RAW, profitability on NET, never t-test a deterministic constant | ~8 | BATCH5 E2 correction |
 | G-096 | 2026-07-23 | Gold-ETF stale-NAV arbitrage (E4) | infra-invalid | - | killed AS artifact - the "dislocation" was the stale print itself | ~4 | E4 |
 | G-100 | 2026-07-24 | SIP-window calendar effect | infra-invalid | - | t=2.93 was ENTIRELY overlapping sessions 1-3 of month (pooling artifact) | ~4 | batch5 |
+| G-113 | 2026-08-11 | The book's kill switch is armed whenever GEX is low, as wired | infra-invalid | the arming leg fires on the intended fraction of days | GEX grows with open interest, so ranking today against the raw 2011-2026 history made `gex_low` true on 5.2% of days in 2024+ against 51.4% era-neutral (pr252). The switch was arming on the 200dMA leg alone: blind to a crash from the top. Found in my own live wiring, not in a backtest | 2 | SEAMS_AUDIT 2026-08-11, arm_recheck.py |
 
 ## Costs ate it (11)
 *`cost-wall` — the edge is real gross and dead net of honest Indian costs*
@@ -113,7 +115,7 @@ thesis applied to itself.
 | G-095 | 2026-07-23 | Index-rebalance add/delete flow (B5-1) | regime | - | every cell FLIPS SIGN by era; post-2021 arbed away | ~6 | B5-1 + FORCED_FLOW |
 | G-107 | 2026-07-21 | Crash-cue atlas (macro cues predict crashes) + regime-weighted overlay | regime | - | prediction fails on clean methodology (reactive, not predictive); overlay tilt FAILS vs incumbent; halves disagree | ~20 | PREREG_CRASH_CUE |
 
-## Edge given back (6)
+## Edge given back (7)
 *`handed-back` — the premium or edge is real and the mechanism hands it back (direction risk, crash correlation, theta)*
 
 | id | killed | hypothesis | class | preregistered bar | verdict, with numbers | configs | receipt |
@@ -124,6 +126,7 @@ thesis applied to itself.
 | G-061 | 2026-07-26 | NIFTY weekly/0DTE short straddle (incl intraday sell 09:45 to 15:15) | handed-back | net > 0 or a timer rescues | breakeven t1.2 win60% worst -2.1%; best conditioner t1.8 fails 6-way multiple testing. VRP fully priced net of cost at ATM | ~20 | weekly options mine |
 | G-069 | 2026-07-26 | Single-stock OTM wing-selling as standalone sleeve | handed-back | survives a real crash | calm alpha REAL both sides (puts +8.2, calls +5.8%/yr, beta 0.13-0.19), then the COVID test: -24% notional in ONE month (-96% on margin) wipes ~3yr; predicted-by-strike-math -25%, hit -24.0. Spreads eat the edge; crash-correlated with the rest of the book, so it fails the diversification bar; in-book it was Sharpe-neutral with a worse tail | ~64 | grid + cov_crash_test + stop tests + combined_book_puts |
 | G-077 | ≤2026-07-26 | Premium-handed-back family: iron-condor (proven 4 ways), ratio spreads, calendarized-VRP, tail-hedge-via-carry, index-hedge variants | handed-back | - | defined-risk hands the edge back; crash-correlated | ~15 | B5 |
+| G-114 | 2026-08-11 | A per-side 3x settle stop on the VRP sleeve improves the BOOK | handed-back | beat the book A/B on CAGR without worsening drawdown percentiles | Standalone it works, and plateau-stably (k 2.5-4.0): sleeve geo 21.9 to 25.9%, worst-8 -48.8 to -27.7%, Sharpe 0.79 to 1.03. At book level REJECTED: +0.7pp CAGR but DD percentiles worsen (-10/-14/-16 to -12/-17/-20 at L1.15) and the solver strips L* 1.35 to 1.20. The stop insures a solo-cell risk the book already diversifies away, then pays the premium in the joint chop-crash cell (Covid -1.5 to -8.9%). Kept as a drawer item for standalone or high-weight VRP worlds | 8 | SEAMS_AUDIT 2026-08-11, honest_update A/B |
 
 ## Market said no (1)
 *`structural-wall` — unshortable, illegal, lot-size or capacity walls; the market says no*
@@ -133,4 +136,4 @@ thesis applied to itself.
 | G-038 | 2026-07-02 | USDINR carry/trend sleeve (retail) | structural-wall | legally tradable | RBI: retail USDINR non-hedging ILLEGAL; offshore-only | ~6 | pareto memory |
 
 ---
-*85 rows published in full or redacted form; 24 rows withheld pending leak review (counted, never hidden); 3 business and go-to-market kills counted but not shown, because this ledger is about dead trading strategies; 112 total. Generated from the internal master; regenerated on every change.*
+*88 rows published in full or redacted form; 24 rows withheld pending leak review (counted, never hidden); 3 business and go-to-market kills counted but not shown, because this ledger is about dead trading strategies; 115 total. Generated from the internal master; regenerated on every change.*
