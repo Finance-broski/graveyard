@@ -8,13 +8,13 @@ This is a public, forward-running ledger of my dead trading research. Every hypo
 kill gets a row: what I believed, what would have counted as success, what the data said,
 and how many configurations died finding out.
 
-**158 distinct strategies tested, across 115 ledger entries, over 2,132
+**159 distinct strategies tested, across 116 ledger entries, over 2,136
 configurations. 12 survived. Five public retractions. Provenance graded honestly, row by row.**
 
 There are more strategies than entries because fourteen entries are families: one row can
-hold eleven separate ideas. This ledger said 115 until those bundles were expanded by hand,
+hold eleven separate ideas. This ledger said 116 until those bundles were expanded by hand,
 which meant an artifact about publishing your denominator was under-reporting its own by a
-third. And 2,132 is still a floor, because before this ledger existed the discarded variants
+third. And 2,136 is still a floor, because before this ledger existed the discarded variants
 were never counted at all. Both corrections are the thesis applied to itself.
 
 ## Why publish failures
@@ -27,7 +27,7 @@ This repo is the table.
 
 I run a systematic book on Indian markets and a research process that kills most of what it
 touches. The kills are not the waste product of that process. They are most of what the
-process knows. A strategy that survived 146 funerals means something different from a
+process knows. A strategy that survived 147 funerals means something different from a
 strategy that survived none.
 
 ## How to read it
@@ -59,18 +59,18 @@ fudged, so here is the arithmetic in one place.
 A **strategy** is one falsifiable idea: a signal, a construction, a claim that could have
 been deployed on its own. A **configuration** is one parameterization of a strategy that
 actually ran. An **entry** is one ledger row, and some rows are families in which several
-related strategies died together, which is why 115 entries hold 158
+related strategies died together, which is why 116 entries hold 159
 strategies.
 
-The reconciliation, so nobody has to reverse-engineer it: 158 strategies tested,
-12 survived in some form, which makes 146 funerals; the survivors do not
-get rows, because the ledger is the dead. Of the 115 entries, 88 publish in
+The reconciliation, so nobody has to reverse-engineer it: 159 strategies tested,
+12 survived in some form, which makes 147 funerals; the survivors do not
+get rows, because the ledger is the dead. Of the 116 entries, 89 publish in
 full or redacted form, 24 are withheld pending leak review (counted and stated
 above), and 3 are business rather than trading kills and are excluded as
-off-topic. The 2,132 configurations are summed over every entry including withheld
+off-topic. The 2,136 configurations are summed over every entry including withheld
 ones, and the count is a floor for the reasons given under limitations.
 
-Census percentages are computed over the 85 published rows only, because those are
+Census percentages are computed over the 89 published rows only, because those are
 the rows you can check.
 
 ## The retractions
@@ -118,21 +118,21 @@ about the dead; the survivors are the book.
 
 Read as a distribution rather than a list, the causes of death are themselves the finding.
 
-**60% died as no-signal.** 51 of 85 published hypotheses produced nothing once
+**58% died as no-signal.** 52 of 89 published hypotheses produced nothing once
 artifacts and controls were applied. That is the base rate this work runs at, worth stating plainly
 because most published research implies the opposite ratio.
 
-**13% died because my own test was broken.** 11 rows are infra-invalid: look-ahead in the
+**13% died because my own test was broken.** 12 rows are infra-invalid: look-ahead in the
 plumbing, stale marks, a statistic computed on a cost-shifted series, a calendar artifact.
 Roughly one investigation in eight failed because of me rather than because of the market. That
 is the number I did not expect when I started counting, and it is the strongest argument for
 keeping the ledger at all, because an error rate you cannot see is one you cannot reduce.
 
-**13% were real and unharvestable.** 11 rows are cost-wall: genuine gross edge, dead net of
+**13% were real and unharvestable.** 12 rows are cost-wall: genuine gross edge, dead net of
 honest costs. The most expensive kind of dead end, because they pass every statistical check and
 fail only where money changes hands.
 
-The rest divide into premium the mechanism hands back (6), era-dependence (5), and one structural wall where the market simply says no.
+The rest divide into premium the mechanism hands back (7), era-dependence (5), and one structural wall where the market simply says no.
 
 Recurring failure modes, in the order they have cost me most: a field only knowable after the
 decision timestamp; a universe screened today and run backwards; costs assumed rather than
@@ -141,9 +141,9 @@ search but reported as though it were found by hypothesis.
 
 ## Exploratory and confirmatory are not the same evidence
 
-Of the 85 published rows, 29 carry a stated numeric bar that was fixed before
+Of the 89 published rows, 30 carry a stated numeric bar that was fixed before
 the test ran. Those are confirmatory: the result either cleared a threshold set in advance or it
-did not. The other 56 were exploratory, run to see what was there, with the verdict recorded afterwards.
+did not. The other 59 were exploratory, run to see what was there, with the verdict recorded afterwards.
 
 Exploratory work is legitimate and necessary, and it is how you learn which questions are worth
 asking. It is not evidence at the same strength, and treating it as though it were is precisely
@@ -230,6 +230,3 @@ every prior version.
 and build [backtest-bias](https://github.com/Finance-broski/backtest-bias)
 (`pip install backtest-bias`). If you want this class of scrutiny on your own backtest:
 [Bias Check](https://forms.gle/sAvosfHnitCBm9FD7), fixed fee, written verdict.*
-
----
-The auditor behind this ledger: [financebroski.com](https://financebroski.com)
